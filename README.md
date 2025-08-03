@@ -19,6 +19,20 @@
 npm install
 ```
 
+### 配置 OpenAI API
+
+1. 创建 `.env.local` 文件：
+```bash
+cp .env.example .env.local
+```
+
+2. 在 `.env.local` 中添加您的 OpenAI API 密钥：
+```
+NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+```
+
+**注意**: 您需要有一个有效的 OpenAI API 密钥才能使用 AI 推荐功能。
+
 ### 启动开发服务器
 
 ```bash

@@ -1,0 +1,184 @@
+{
+  "burgers_and_fast_food": [
+    {
+      "name": "小满熊经典堡",
+      "english_name": "Xiaoman Bear Classic Castle",
+      "price": "25元/份",
+      "includes": "薯条+可乐"
+    },
+    {
+      "name": "黑松露风味牛肉堡",
+      "english_name": "Black Truffle Flavored Beef Burger",
+      "price": "25元/份",
+      "includes": "薯条+可乐"
+    },
+    {
+      "name": "菠萝牛肉堡",
+      "english_name": "Pineapple Beef Burger",
+      "price": "25元/份",
+      "includes": "薯条+可乐"
+    },
+    {
+      "name": "安格斯牛肉堡",
+      "english_name": "Angus Beef Burger",
+      "price": "15元/个"
+    },
+    {
+      "name": "菠萝大虾堡",
+      "english_name": "Pineapple Shrimp Burger",
+      "price": "15元/个"
+    },
+    {
+      "name": "原味炸鸡堡",
+      "english_name": "Original Flavor Fried Chicken Burger",
+      "price": "15元/个"
+    },
+    {
+      "name": "薯条",
+      "english_name": "French Fries",
+      "price": "7元/份"
+    },
+    {
+      "name": "酥皮蛋挞",
+      "english_name": "Crispy Egg Tart",
+      "price": "4元/个 or 10元/3个"
+    },
+    {
+      "name": "网红墨鱼汁汉堡",
+      "english_name": "Squid Ink Burger",
+      "price": "+1元升级"
+    }
+  ],
+  "drinks_and_desserts": [
+    {
+      "name": "现榨玉米汁",
+      "english_name": "Freshly Squeezed Corn Juice",
+      "price": "4元/杯"
+    },
+    {
+      "name": "花生核桃汁",
+      "english_name": "Peanut and Walnut Juice",
+      "price": "6元/杯"
+    },
+    {
+      "name": "山药红枣汁",
+      "english_name": "Yam and Red Date Juice",
+      "price": "6元/杯"
+    },
+    {
+      "name": "杨枝甘露",
+      "english_name": "Mango Sago",
+      "price": "9.9元/杯"
+    },
+    {
+      "name": "雪梨柠檬茶",
+      "english_name": "Snow Pear Lemon Tea",
+      "price": "9.9元/杯"
+    },
+    {
+      "name": "金桔百香果",
+      "english_name": "Kumquat Passion Fruit",
+      "price": "9.9元/杯"
+    },
+    {
+      "name": "可乐",
+      "english_name": "Cola",
+      "price": "6元/杯"
+    },
+    {
+      "name": "冰淇淋",
+      "english_name": "Ice Cream",
+      "price": "7元/单球, 9元/双球"
+    }
+  ],
+  "hot_dishes": [
+    {
+      "name": "红烧肉烧鹌鹑蛋",
+      "english_name": "Braised Quail Eggs with Braised Pork Belly",
+      "price": "19.9元/份"
+    },
+    {
+      "name": "安格斯肥牛",
+      "english_name": "Angus Beef",
+      "price": "19.9元/份"
+    },
+    {
+      "name": "小炒黄牛肉",
+      "english_name": "Stir Fried Yellow Beef",
+      "price": "19.9元/份"
+    },
+    {
+      "name": "辣椒炒肉",
+      "english_name": "Chili Fried Meat",
+      "price": "12.9元/份"
+    },
+    {
+      "name": "金汤酸菜鱼",
+      "english_name": "Pickled Chinese Cabbage Fish in Golden Soup",
+      "price": "14.9元/份"
+    },
+    {
+      "name": "梅菜扣肉",
+      "english_name": "Braised Pork Belly with Fermented Mustard Greens",
+      "price": "12.9元/份"
+    }
+  ],
+  "side_dishes_and_small_plates": [
+    {
+      "name": "咸蛋黄狮子头",
+      "english_name": "Salted Egg Yolk Lion’s Head",
+      "price": "9.9元/份"
+    },
+    {
+      "name": "肉饼蒸蛋",
+      "english_name": "Meat Patty with Steamed Egg",
+      "price": "9.9元/份"
+    },
+    {
+      "name": "老豆腐烧肉",
+      "english_name": "Braised Tofu with Pork",
+      "price": "6.9元/份"
+    },
+    {
+      "name": "宫爆鸡丁",
+      "english_name": "Kung Pao Chicken",
+      "price": "8.8元/份"
+    },
+    {
+      "name": "西红柿炒蛋",
+      "english_name": "Tomato & Scrambled Egg",
+      "price": "6.9元/份"
+    },
+    {
+      "name": "酸菜鸭血",
+      "english_name": "Pickled Veg with Duck Blood",
+      "price": "6.9元/份"
+    },
+    {
+      "name": "麻辣豆腐",
+      "english_name": "Spicy Tofu",
+      "price": "2.9元/份"
+    },
+    {
+      "name": "西红柿蛋汤",
+      "english_name": "Tomato Egg Soup",
+      "price": "1.9元/份"
+    },
+    {
+      "name": "醋溜大白菜",
+      "english_name": "Vinegar Cabbage",
+      "price": "2.9元/份"
+    },
+    {
+      "name": "米饭",
+      "english_name": "Steamed Rice",
+      "price": "2元/份"
+    },
+    {
+      "name": "水蒸蛋",
+      "english_name": "Steamed Egg",
+      "price": "3.9元/份"
+    }
+  ]
+}
+

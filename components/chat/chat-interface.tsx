@@ -13,7 +13,9 @@ import { ShoppingCartBar } from '../cart/shopping-cart-bar';
 import { CartDialog } from '../cart/cart-dialog';
 import { DishDetailsPanel } from '../side-panel/dish-details-panel';
 import { Message, ChatState, MenuItem, CartItem } from '@/types';
-import { Send, Mic } from 'lucide-react';
+import { Send, Mic, RotateCcw } from 'lucide-react';
+import { getChatResponse, getGeneralChatResponse, MenuRecommendation } from '@/lib/openai-service';
+import menuData from '@/data/data.json';
 
 export function ChatInterface() {
   const [chatState, setChatState] = useState<ChatState>({
@@ -24,6 +26,44 @@ export function ChatInterface() {
     selectedDish: null,
     sidePanelOpen: false,
   });
+
+  // Load chat state from localStorage on mount
+  useEffect(() => {
+    const savedChatState = localStorage.getItem('orderly-chat-state');
+    if (savedChatState) {
+      try {
+        const parsedState = JSON.parse(savedChatState);
+        setChatState(prev => ({
+          ...prev,
+          ...parsedState,
+          // Convert timestamp strings back to Date objects
+          messages: parsedState.messages?.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          })) || []
+        }));
+        // If we have messages, don't show welcome screen
+        if (parsedState.messages?.length > 0) {
+          setShowWelcome(false);
+        }
+      } catch (error) {
+        console.error('Error loading chat state from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save chat state to localStorage whenever it changes
+  useEffect(() => {
+    // Only save if we have messages (avoid saving initial empty state)
+    if (chatState.messages.length > 0) {
+      localStorage.setItem('orderly-chat-state', JSON.stringify({
+        messages: chatState.messages,
+        currentStep: chatState.currentStep,
+        userProfile: chatState.userProfile,
+        cart: chatState.cart
+      }));
+    }
+  }, [chatState]);
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -84,10 +124,11 @@ export function ChatInterface() {
     addMessage({
       id: '1',
       type: 'ai',
-      content: '你好！我是你的AI点菜助手 🍽️ 今天想吃点啥？我来帮你搭配👌',
-      options: ['1人', '2-4人', '5-8人', '8人以上'],
+      content: '你好！我是你的AI点菜助手 🍽️ 让我来帮您推荐合适的菜品。首先，请告诉我您的预算范围：',
+      options: ['50元以下', '50-100元', '100-200元', '200元以上'],
       component: 'options-selector'
     });
+    setChatState(prev => ({ ...prev, currentStep: 'budget' }));
   };
 
   // Auto scroll to bottom
@@ -108,38 +149,18 @@ export function ChatInterface() {
     }));
   };
 
-  const handlePeopleCountSelection = (count: string) => {
-    addMessage({
-      id: Date.now().toString(),
-      type: 'user',
-      content: `我选择：${count}`
-    });
-
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      addMessage({
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: '好的！现在想了解一下你的预算，这样我能为你推荐最合适的菜品 💰',
-        options: ['100元以下', '100-200元', '200-500元', '500元以上'],
-        component: 'options-selector'
-      });
-      setChatState(prev => ({ ...prev, currentStep: 'budget' }));
-    }, 1500);
-  };
-
   const handleBudgetSelection = (budget: string) => {
     addMessage({
       id: Date.now().toString(),
       type: 'user',
-      content: `我选择：${budget}`
+      content: `我的预算是：${budget}`
     });
 
     // Update user profile with budget
     setChatState(prev => ({ 
       ...prev, 
-      userProfile: { ...prev.userProfile, budget }
+      userProfile: { ...prev.userProfile, budget },
+      currentStep: 'preferences'
     }));
 
     setIsTyping(true);
@@ -148,85 +169,106 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '太好了！那你更喜欢中餐还是西餐呢？🍜🍝',
-        options: ['中餐', '西餐'],
-        component: 'options-selector'
+        content: '很好！现在请告诉我您的口味偏好，比如：喜欢辣的、清淡的、肉类、素食等等 😊',
       });
-      setChatState(prev => ({ ...prev, currentStep: 'cuisine-preference' }));
     }, 1500);
   };
 
-  const handleCuisineSelection = (cuisine: string) => {
-    addMessage({
-      id: Date.now().toString(),
-      type: 'user',
-      content: `我选择：${cuisine}`
-    });
 
-    // Update user profile with cuisine preference
-    const cuisineType = cuisine === '中餐' ? 'chinese' : 'western';
-    setChatState(prev => ({ 
-      ...prev, 
-      userProfile: { ...prev.userProfile, cuisineType }
-    }));
 
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      addMessage({
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: '太棒了！根据你的喜好，我为你推荐了几道菜，快来看看吧 👇',
-        menuItems: mockDishes,
-        component: 'menu-recommendations'
-      });
-      setChatState(prev => ({ ...prev, currentStep: 'recommendations' }));
-    }, 1500);
-  };
+
 
   // Generic option selection handler that routes to the appropriate function
   const handleOptionSelection = (option: string) => {
     switch (chatState.currentStep) {
-      case 'welcome':
-        handlePeopleCountSelection(option);
-        break;
       case 'budget':
         handleBudgetSelection(option);
         break;
-      case 'cuisine-preference':
-        handleCuisineSelection(option);
-        break;
       default:
-        handlePeopleCountSelection(option);
+        break;
     }
   };
 
-  const handlePreferencesInput = () => {
+  // Helper function to build conversation history for API calls
+  const buildConversationHistory = () => {
+    return chatState.messages
+      .filter(msg => msg.type === 'user' || msg.type === 'ai')
+      .map(msg => ({
+        role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+        content: msg.content
+      }));
+  };
+
+  // Helper function to convert recommendations to MenuItem format
+  const convertRecommendationsToMenuItems = (recommendations: MenuRecommendation[]): MenuItem[] => {
+    return recommendations.map((rec: MenuRecommendation) => ({
+      id: rec.id,
+      name: rec.name,
+      description: rec.reason,
+      price: parseInt(rec.price.replace(/[^\d]/g, '')),
+      image: '/dishes/default.jpg',
+      category: rec.category,
+      ingredients: [],
+      recommendations: rec.reason
+    }));
+  };
+
+  const handlePreferencesInput = async () => {
     if (!inputValue.trim()) return;
 
+    const preferences = inputValue;
     addMessage({
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue
+      content: preferences
     });
 
     setInputValue('');
-
     setIsTyping(true);
-    setTimeout(() => {
+
+    try {
+      const conversationHistory = buildConversationHistory();
+      const response = await getChatResponse({
+        budget: chatState.userProfile.budget || '100元以下',
+        preferences: preferences,
+        conversationHistory
+      });
+
+      // Convert menu recommendations to MenuItem format
+      const menuItems: MenuItem[] = (response.recommendations || []).map((rec: MenuRecommendation, index: number) => ({
+        id: rec.id,
+        name: rec.name,
+        description: rec.reason,
+        price: parseInt(rec.price.replace(/[^\d]/g, '')),
+        image: '/dishes/default.jpg',
+        category: rec.category,
+        ingredients: [],
+        recommendations: rec.reason
+      }));
+
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '太棒了！根据你的喜好，我为你推荐了几道菜，快来看看吧 👇',
+        content: response.message,
+        menuItems: menuItems,
+        component: 'menu-recommendations'
+      });
+      setChatState(prev => ({ ...prev, currentStep: 'recommendations' }));
+    } catch (error) {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '抱歉，推荐系统遇到了问题。让我为您推荐一些热门菜品：',
         menuItems: mockDishes,
         component: 'menu-recommendations'
       });
       setChatState(prev => ({ ...prev, currentStep: 'recommendations' }));
-    }, 1500);
+    }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
     
     if (chatState.currentStep === 'preferences') {
@@ -234,43 +276,57 @@ export function ChatInterface() {
       return;
     }
 
+    const userMessage = inputValue;
     addMessage({
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue
+      content: userMessage
     });
 
     setInputValue('');
 
-    // Simulate AI response
+    // Get AI response
     setIsTyping(true);
-    setTimeout(() => {
+    try {
+      const aiResponse = await getAIResponse(userMessage);
+      setIsTyping(false);
+      
+      // Convert recommendations to MenuItem format if they exist
+      let menuItems: MenuItem[] | undefined;
+      if (aiResponse.recommendations) {
+        menuItems = convertRecommendationsToMenuItems(aiResponse.recommendations);
+      }
+      
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: aiResponse.message,
+        menuItems: menuItems,
+        component: menuItems ? 'menu-recommendations' : undefined
+      });
+    } catch (error) {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: getAIResponse(inputValue)
+        content: '抱歉，我现在无法回答您的问题。请稍后重试。'
       });
-    }, 800);
+    }
   };
 
-  const getAIResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes('辣')) {
-      return '根据你选的菜品，宫保鸡丁是中辣的，其他都比较清淡哦！如果不能吃辣，建议选番茄牛腩汤和清蒸鲈鱼 😊';
+  const getAIResponse = async (userInput: string): Promise<{
+    message: string;
+    recommendations?: MenuRecommendation[];
+  }> => {
+    try {
+      const conversationHistory = buildConversationHistory();
+      const response = await getGeneralChatResponse(userInput, conversationHistory);
+      return response;
+    } catch (error) {
+      return {
+        message: '我理解你的意思！还有什么想了解的可以继续问我哦～ 或者你可以点击菜品卡片查看更多详情 😊'
+      };
     }
-    if (input.includes('女生') || input.includes('适合')) {
-      return '番茄牛腩汤特别适合女生，营养丰富还暖胃！清蒸鲈鱼也很棒，清淡健康 💕';
-    }
-    if (input.includes('油腻')) {
-      return '清蒸鲈鱼最清爽，完全不油腻！番茄牛腩汤也很清淡。宫保鸡丁会稍微油一些，但很香～';
-    }
-    if (input.includes('推荐') || input.includes('建议')) {
-      return '根据你的选择，我建议这样搭配：宫保鸡丁（主菜）+ 番茄牛腩汤（汤品）+ 清蒸鲈鱼（清淡），营养均衡又美味！';
-    }
-    
-    return '我理解你的意思！还有什么想了解的可以继续问我哦～ 或者你可以点击菜品卡片查看更多详情 😊';
   };
 
   const handleAddToCart = (dish: MenuItem) => {
@@ -302,7 +358,7 @@ export function ChatInterface() {
     }));
   };
 
-  const handleAskQuestion = (question: string) => {
+  const handleAskQuestion = async (question: string) => {
     // Keep the side panel open when asking questions
     
     addMessage({
@@ -311,13 +367,32 @@ export function ChatInterface() {
       content: question
     });
 
-    setTimeout(() => {
+    setIsTyping(true);
+    try {
+      const aiResponse = await getAIResponse(question);
+      setIsTyping(false);
+      
+      // Convert recommendations to MenuItem format if they exist
+      let menuItems: MenuItem[] | undefined;
+      if (aiResponse.recommendations) {
+        menuItems = convertRecommendationsToMenuItems(aiResponse.recommendations);
+      }
+      
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: getAIResponse(question)
+        content: aiResponse.message,
+        menuItems: menuItems,
+        component: menuItems ? 'menu-recommendations' : undefined
       });
-    }, 500);
+    } catch (error) {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '抱歉，我现在无法回答您的问题。请稍后重试。'
+      });
+    }
   };
 
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
@@ -350,6 +425,21 @@ export function ChatInterface() {
     });
   };
 
+  const clearConversationHistory = () => {
+    if (confirm('确定要清除所有聊天记录和购物车吗？此操作无法撤销。')) {
+      localStorage.removeItem('orderly-chat-state');
+      setChatState({
+        messages: [],
+        currentStep: 'welcome',
+        userProfile: {},
+        cart: [],
+        selectedDish: null,
+        sidePanelOpen: false,
+      });
+      setShowWelcome(true);
+    }
+  };
+
   const handleOpenCart = () => {
     setCartDialogOpen(true);
   };
@@ -366,7 +456,21 @@ export function ChatInterface() {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <div className="bg-white border-b border-[#DDDDDD] px-4 py-3 flex-shrink-0">
-          <h1 className="text-lg font-semibold text-[#333333]">AI 点菜助手</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-semibold text-[#333333]">AI 点菜助手</h1>
+            {!showWelcome && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearConversationHistory}
+                className="text-gray-600 hover:text-gray-800"
+                title="清除聊天记录"
+              >
+                <RotateCcw className="w-4 h-4 mr-1" />
+                清除记录
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Chat Messages - Now properly constrained */}
