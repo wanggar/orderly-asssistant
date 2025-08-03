@@ -9,6 +9,18 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isUser }: MessageBubbleProps) {
+  // System messages (轻反馈)
+  if (message.type === 'system') {
+    return (
+      <div className="flex w-full justify-center mb-2">
+        <div className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
+  // Regular user and AI messages
   return (
     <div className={cn(
       "flex w-full mb-4",

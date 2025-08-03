@@ -10,6 +10,7 @@ import { DishCard } from './dish-card';
 import { TypingIndicator } from './typing-indicator';
 import { WelcomeScreen } from './welcome-screen';
 import { ShoppingCartBar } from '../cart/shopping-cart-bar';
+import { CartDialog } from '../cart/cart-dialog';
 import { DishDetailsPanel } from '../side-panel/dish-details-panel';
 import { Message, ChatState, MenuItem, CartItem } from '@/types';
 import { Send, Mic } from 'lucide-react';
@@ -27,6 +28,7 @@ export function ChatInterface() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [cartDialogOpen, setCartDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -287,8 +289,8 @@ export function ChatInterface() {
 
     addMessage({
       id: Date.now().toString(),
-      type: 'ai',
-      content: `好的，我已经帮你加进菜单啦 ✅ ${dish.name} 已添加到购物车！`
+      type: 'system',
+      content: `${dish.name} 已添加到购物车`
     });
   };
 
@@ -348,6 +350,16 @@ export function ChatInterface() {
     });
   };
 
+  const handleOpenCart = () => {
+    setCartDialogOpen(true);
+  };
+
+  // 获取菜品在购物车中的数量
+  const getDishQuantity = (dishId: string): number => {
+    const cartItem = chatState.cart.find(item => item.id === dishId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
   return (
     <div className="flex h-screen bg-[#FFFBF5]">
       {/* Main Chat Area */}
@@ -383,7 +395,9 @@ export function ChatInterface() {
                             <DishCard
                               key={dish.id}
                               dish={dish}
+                              quantity={getDishQuantity(dish.id)}
                               onAddToCart={handleAddToCart}
+                              onUpdateQuantity={handleUpdateQuantity}
                               onViewDetails={handleViewDetails}
                             />
                           ))}
@@ -407,6 +421,7 @@ export function ChatInterface() {
               onRemoveItem={handleRemoveItem}
               onClearCart={handleClearCart}
               onCheckout={handleCheckout}
+              onOpenCart={handleOpenCart}
             />
           </div>
 
@@ -443,8 +458,21 @@ export function ChatInterface() {
         isOpen={chatState.sidePanelOpen}
         onClose={() => setChatState(prev => ({ ...prev, sidePanelOpen: false, selectedDish: null }))}
         onAddToCart={handleAddToCart}
+        onUpdateQuantity={handleUpdateQuantity}
         onAskQuestion={handleAskQuestion}
         onViewDetails={handleViewDetails}
+        quantity={chatState.selectedDish ? getDishQuantity(chatState.selectedDish.id) : 0}
+      />
+
+      {/* Cart Dialog */}
+      <CartDialog
+        isOpen={cartDialogOpen}
+        onClose={() => setCartDialogOpen(false)}
+        items={chatState.cart}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onClearCart={handleClearCart}
+        onCheckout={handleCheckout}
       />
     </div>
   );

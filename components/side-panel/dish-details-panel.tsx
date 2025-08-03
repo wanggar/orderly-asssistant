@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MenuItem } from "@/types";
-import { ShoppingCart, Star, X } from "lucide-react";
+import { ShoppingCart, Star, X, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DishDetailsPanelProps {
@@ -12,8 +12,10 @@ interface DishDetailsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (dish: MenuItem) => void;
+  onUpdateQuantity: (dishId: string, quantity: number) => void;
   onAskQuestion: (question: string) => void;
   onViewDetails: (dish: MenuItem) => void;
+  quantity: number;
 }
 
 export function DishDetailsPanel({ 
@@ -21,8 +23,10 @@ export function DishDetailsPanel({
   isOpen, 
   onClose, 
   onAddToCart,
+  onUpdateQuantity,
   onAskQuestion,
-  onViewDetails
+  onViewDetails,
+  quantity
 }: DishDetailsPanelProps) {
 
   const spicyLevelText = dish?.spicyLevel 
@@ -239,13 +243,44 @@ export function DishDetailsPanel({
       {/* Fixed Bottom Button */}
       {isOpen && dish && (
         <div className="p-4 border-t border-[#DDDDDD] bg-[#FFFBF5]">
-          <Button
-            onClick={() => onAddToCart(dish)}
-            className="w-full bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 font-medium"
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            加入购物车 - ¥{dish.price}
-          </Button>
+          {quantity === 0 ? (
+            <Button
+              onClick={() => onAddToCart(dish)}
+              className="w-full bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 font-medium"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              加入购物车 - ¥{dish.price}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-4">
+              {/* 数量选择器 */}
+              <div className="flex items-center gap-3 flex-1">
+                <Button
+                  onClick={() => onUpdateQuantity(dish.id, Math.max(0, quantity - 1))}
+                  className="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  variant="outline"
+                >
+                  <Minus className="w-5 h-5" />
+                </Button>
+                <div className="flex-1 text-center">
+                  <div className="text-lg font-bold text-[#FF6B2D]">{quantity}</div>
+                  <div className="text-xs text-gray-500">已选择</div>
+                </div>
+                <Button
+                  onClick={() => onUpdateQuantity(dish.id, quantity + 1)}
+                  className="w-12 h-12 bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 text-white"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
+              
+              {/* 总价显示 */}
+              <div className="text-right">
+                <div className="text-xs text-gray-500">小计</div>
+                <div className="text-lg font-bold text-[#FF6B2D]">¥{(dish.price * quantity).toFixed(2)}</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

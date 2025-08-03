@@ -34,7 +34,7 @@ export interface CartItem extends MenuItem {
 
 export interface Message {
   id: string;
-  type: 'user' | 'ai';
+  type: 'user' | 'ai' | 'system';
   content: string;
   timestamp: Date;
   options?: string[];
