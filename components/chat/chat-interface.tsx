@@ -83,7 +83,6 @@ export function ChatInterface() {
       id: '1',
       type: 'ai',
       content: '你好！我是你的AI点菜助手 🍽️ 今天想吃点啥？我来帮你搭配👌',
-      timestamp: new Date(),
       options: ['1人', '2-4人', '5-8人', '8人以上'],
       component: 'options-selector'
     });
@@ -120,12 +119,84 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '好的！现在让我了解一下你的喜好，我来为你推荐最合适的菜品 ✨',
-        options: ['想花多少钱？', '想吃什么风格？', '有没有忌口？'],
-        component: 'preferences'
+        content: '好的！现在想了解一下你的预算，这样我能为你推荐最合适的菜品 💰',
+        options: ['100元以下', '100-200元', '200-500元', '500元以上'],
+        component: 'options-selector'
       });
-      setChatState(prev => ({ ...prev, currentStep: 'preferences' }));
-    }, 1000);
+      setChatState(prev => ({ ...prev, currentStep: 'budget' }));
+    }, 1500);
+  };
+
+  const handleBudgetSelection = (budget: string) => {
+    addMessage({
+      id: Date.now().toString(),
+      type: 'user',
+      content: `我选择：${budget}`
+    });
+
+    // Update user profile with budget
+    setChatState(prev => ({ 
+      ...prev, 
+      userProfile: { ...prev.userProfile, budget }
+    }));
+
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '太好了！那你更喜欢中餐还是西餐呢？🍜🍝',
+        options: ['中餐', '西餐'],
+        component: 'options-selector'
+      });
+      setChatState(prev => ({ ...prev, currentStep: 'cuisine-preference' }));
+    }, 1500);
+  };
+
+  const handleCuisineSelection = (cuisine: string) => {
+    addMessage({
+      id: Date.now().toString(),
+      type: 'user',
+      content: `我选择：${cuisine}`
+    });
+
+    // Update user profile with cuisine preference
+    const cuisineType = cuisine === '中餐' ? 'chinese' : 'western';
+    setChatState(prev => ({ 
+      ...prev, 
+      userProfile: { ...prev.userProfile, cuisineType }
+    }));
+
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '太棒了！根据你的喜好，我为你推荐了几道菜，快来看看吧 👇',
+        menuItems: mockDishes,
+        component: 'menu-recommendations'
+      });
+      setChatState(prev => ({ ...prev, currentStep: 'recommendations' }));
+    }, 1500);
+  };
+
+  // Generic option selection handler that routes to the appropriate function
+  const handleOptionSelection = (option: string) => {
+    switch (chatState.currentStep) {
+      case 'welcome':
+        handlePeopleCountSelection(option);
+        break;
+      case 'budget':
+        handleBudgetSelection(option);
+        break;
+      case 'cuisine-preference':
+        handleCuisineSelection(option);
+        break;
+      default:
+        handlePeopleCountSelection(option);
+    }
   };
 
   const handlePreferencesInput = () => {
@@ -302,12 +373,12 @@ export function ChatInterface() {
                       {message.component === 'options-selector' && message.options && (
                         <OptionsSelector
                           options={message.options}
-                          onSelect={handlePeopleCountSelection}
+                          onSelect={handleOptionSelection}
                         />
                       )}
                       
                       {message.component === 'menu-recommendations' && message.menuItems && (
-                        <div className="space-y-4 mb-4">
+                        <div className="grid grid-cols-2 gap-3 mb-4">
                           {message.menuItems.map(dish => (
                             <DishCard
                               key={dish.id}
@@ -373,6 +444,7 @@ export function ChatInterface() {
         onClose={() => setChatState(prev => ({ ...prev, sidePanelOpen: false, selectedDish: null }))}
         onAddToCart={handleAddToCart}
         onAskQuestion={handleAskQuestion}
+        onViewDetails={handleViewDetails}
       />
     </div>
   );

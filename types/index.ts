@@ -2,6 +2,7 @@
 
 export interface UserProfile {
   budget?: string;
+  cuisineType?: string; // 'chinese' | 'western'
   preferences?: string[];
   restrictions?: string[];
   mood?: string;
@@ -43,9 +44,9 @@ export interface Message {
 
 export interface ChatState {
   messages: Message[];
-  currentStep: 'welcome' | 'people-count' | 'preferences' | 'recommendations' | 'chat' | 'confirmation';
+  currentStep: 'welcome' | 'people-count' | 'budget' | 'cuisine-preference' | 'preferences' | 'recommendations' | 'chat' | 'confirmation';
   userProfile: UserProfile;
   cart: CartItem[];
-  selectedDish?: MenuItem;
+  selectedDish: MenuItem | null;
   sidePanelOpen: boolean;
 }
