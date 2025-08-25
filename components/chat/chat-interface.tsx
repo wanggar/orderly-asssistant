@@ -15,7 +15,7 @@ import { DishDetailsPanel } from '../side-panel/dish-details-panel';
 import { Message, ChatState, MenuItem, CartItem } from '@/types';
 import { Send, Mic, RotateCcw } from 'lucide-react';
 import { getChatResponse, getGeneralChatResponse, MenuRecommendation } from '@/lib/openai-service';
-import menuData from '@/data/data.json';
+import menuData from '@/data/menu.json';
 
 export function ChatInterface() {
   const [chatState, setChatState] = useState<ChatState>({
@@ -124,11 +124,11 @@ export function ChatInterface() {
     addMessage({
       id: '1',
       type: 'ai',
-      content: '你好！我是你的AI点菜助手 🍽️ 让我来帮您推荐合适的菜品。首先，请告诉我您的预算范围：',
-      options: ['50元以下', '50-100元', '100-200元', '200元以上'],
+      content: '你好！欢迎来到我们餐厅 🍽️ 今天几位用餐呀？看起来心情不错呢～',
+      options: ['1人', '2人', '3-4人', '5人以上'],
       component: 'options-selector'
     });
-    setChatState(prev => ({ ...prev, currentStep: 'budget' }));
+    setChatState(prev => ({ ...prev, currentStep: 'people-count' }));
   };
 
   // Auto scroll to bottom
@@ -181,11 +181,128 @@ export function ChatInterface() {
   // Generic option selection handler that routes to the appropriate function
   const handleOptionSelection = (option: string) => {
     switch (chatState.currentStep) {
+      case 'people-count':
+        handlePeopleCountSelection(option);
+        break;
+      case 'preference-exploration':
+        handlePreferenceExploration(option);
+        break;
       case 'budget':
         handleBudgetSelection(option);
         break;
       default:
         break;
+    }
+  };
+
+  const handlePeopleCountSelection = (option: string) => {
+    // Add user selection message
+    addMessage({
+      id: Date.now().toString(),
+      type: 'user',
+      content: option
+    });
+
+    // Store people count in user profile
+    setChatState(prev => ({
+      ...prev,
+      userProfile: { ...prev.userProfile, peopleCount: option },
+      currentStep: 'exploration'
+    }));
+
+    // AI explores user preferences naturally
+    const explorativeResponses = [
+      {
+        condition: option === '1人',
+        response: '一个人来用餐呀～今天想吃点什么呢？是想要清淡一些的还是重口味的？',
+        options: ['清淡健康', '重口下饭', '随便推荐']
+      },
+      {
+        condition: option === '2人',
+        response: '两个人呀，不错！你们是朋友聚餐还是情侣约会？平时喜欢什么口味呢？',
+        options: ['川湘菜系', '家常菜', '尝试特色', '随意']
+      },
+      {
+        condition: option.includes('3') || option.includes('4'),
+        response: '几个朋友一起来呀，热闹！你们平时聚餐喜欢点什么类型的菜？',
+        options: ['下酒菜', '家常热菜', '特色招牌', '荤素搭配']
+      },
+      {
+        condition: option.includes('5'),
+        response: '哇，这么多人！看起来是个重要聚会呢～要不要试试我们的招牌菜？',
+        options: ['招牌推荐', '经济实惠', '丰盛大餐', '让你推荐']
+      }
+    ];
+
+    const matchedResponse = explorativeResponses.find(r => r.condition) || explorativeResponses[0];
+    
+    setTimeout(() => {
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: matchedResponse.response,
+        options: matchedResponse.options,
+        component: 'options-selector'
+      });
+      setChatState(prev => ({ ...prev, currentStep: 'preference-exploration' }));
+    }, 1000);
+  };
+
+  const handlePreferenceExploration = async (option: string) => {
+    // Add user selection message
+    addMessage({
+      id: Date.now().toString(),
+      type: 'user',
+      content: option
+    });
+
+    // Store preference in user profile
+    setChatState(prev => ({
+      ...prev,
+      userProfile: { ...prev.userProfile, preference: option }
+    }));
+
+    setIsTyping(true);
+
+    try {
+      // Build conversation history and make AI recommendation
+      const conversationHistory = buildConversationHistory();
+      
+      // Add the current selection to the conversation
+      conversationHistory.push({
+        role: 'user',
+        content: option
+      });
+
+      const response = await getGeneralChatResponse(
+        `用户选择了"${option}"，现在请根据我们的推荐策略给出菜品推荐。记住要体现三层推荐策略。`,
+        conversationHistory
+      );
+
+      setIsTyping(false);
+
+      // Convert recommendations to MenuItem format if they exist
+      let menuItems: MenuItem[] | undefined;
+      if (response.recommendations) {
+        menuItems = convertRecommendationsToMenuItems(response.recommendations);
+      }
+
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: response.message,
+        menuItems: menuItems,
+        component: menuItems ? 'menu-recommendations' : undefined
+      });
+
+      setChatState(prev => ({ ...prev, currentStep: 'recommendations' }));
+    } catch (error) {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '让我先为你推荐几道不错的菜品吧！'
+      });
     }
   };
 
@@ -204,10 +321,11 @@ export function ChatInterface() {
     return recommendations.map((rec: MenuRecommendation) => ({
       id: rec.id,
       name: rec.name,
-      description: rec.reason,
-      price: parseInt(rec.price.replace(/[^\d]/g, '')),
+      description: rec.description || rec.reason,
+      price: rec.price,
       image: '/dishes/default.jpg',
       category: rec.category,
+      spicyLevel: rec.spicyLevel,
       ingredients: [],
       recommendations: rec.reason
     }));
@@ -238,10 +356,11 @@ export function ChatInterface() {
       const menuItems: MenuItem[] = (response.recommendations || []).map((rec: MenuRecommendation, index: number) => ({
         id: rec.id,
         name: rec.name,
-        description: rec.reason,
-        price: parseInt(rec.price.replace(/[^\d]/g, '')),
+        description: rec.description || rec.reason,
+        price: rec.price,
         image: '/dishes/default.jpg',
         category: rec.category,
+        spicyLevel: rec.spicyLevel,
         ingredients: [],
         recommendations: rec.reason
       }));

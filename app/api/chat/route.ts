@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import menuData from '@/data/data.json';
+import menuData from '@/data/menu.json';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY // Use server-side env var
@@ -9,56 +9,83 @@ const openai = new OpenAI({
 interface MenuRecommendation {
   id: string;
   name: string;
-  english_name: string;
-  price: string;
+  price: number;
   category: string;
   reason: string;
+  description?: string;
+  spicyLevel?: number;
 }
 
 // Convert menu data to a searchable format
 const formatMenuForAI = () => {
-  const categories = Object.keys(menuData) as Array<keyof typeof menuData>;
-  const formattedMenu = categories.map(category => ({
+  // Group menu items by category
+  const categories = menuData.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, typeof menuData>);
+  
+  const formattedMenu = Object.keys(categories).map(category => ({
     category,
-    items: menuData[category]
+    items: categories[category]
   }));
   return formattedMenu;
 };
 
 // LLM-powered recommendation function
-const getLLMRecommendations = async (budget: string, preferences: string, count: number = 5): Promise<MenuRecommendation[]> => {
+const getLLMRecommendations = async (budget: string, preferences: string, count: number = 3): Promise<MenuRecommendation[]> => {
   const menu = formatMenuForAI();
   console.log('Formatted menu for AI:', JSON.stringify(menu, null, 2));
   
   const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
-        content: `You are an expert Chinese restaurant recommendation engine. You MUST respond with ONLY a valid JSON array, no other text.
+        content: `你是专业的餐厅推荐专家，需要根据三层推荐策略来选择菜品。你必须只返回有效的JSON数组，不要任何其他文字。
 
-MENU DATA:
+菜单数据：
 ${JSON.stringify(menu, null, 2)}
 
-INSTRUCTIONS:
-1. Analyze user budget and preferences
-2. Select dishes from the menu that match their criteria
-3. For budget ranges like "100-200元", select multiple dishes that total within that range
-4. For preferences like "油腻的" (greasy/oily), choose rich, fried, or fatty dishes
+## 🎯 三层推荐策略：
 
-CRITICAL: Your response must be ONLY a valid JSON array with this exact format:
+**第一层：信任建立**（推荐1-2道）
+- 选择用户明确偏好的菜品
+- 价格合理，口味安全
+- 理由强调"受欢迎"、"经典"、"正宗"
+
+**第二层：边界探索**（推荐1道）
+- 稍微超出用户明确偏好，但有关联性
+- 价格适中，有特色但不过分冒险
+- 理由强调"特色"、"招牌"、"值得一试"
+
+**第三层：价值挖掘**（推荐1-2道）
+- 高价值菜品，完善整体搭配
+- 可以稍贵，但要有说服力
+- 理由强调"完整搭配"、"营养均衡"、"经典组合"
+
+## 📋 推荐原则：
+1. 根据用户偏好和预算智能分层
+2. 确保荤素搭配、口味层次丰富
+3. 总价控制在合理范围内
+4. 每道菜的推荐理由要有说服力
+
+关键格式要求：
 [
   {
-    "id": "category-dishname",
-    "name": "exact dish name from menu",
-    "english_name": "exact english name from menu",
-    "price": "exact price string from menu",
-    "category": "exact category name",
-    "reason": "reason in Chinese why this matches their preference"
+    "id": "菜单中的准确id",
+    "name": "菜单中的准确菜名",
+    "price": 菜单中的准确价格数字,
+    "category": "准确的菜品分类",
+    "reason": "中文推荐理由，体现分层策略",
+    "description": "菜单中的准确描述",
+    "spicyLevel": 准确的辣度等级数字
   }
 ]
 
-DO NOT include any other text, explanations, or markdown. Only return the JSON array.`
+只返回JSON数组，不要任何其他文字、解释或markdown格式。`
       },
       {
         role: "user", 
@@ -124,12 +151,13 @@ Please recommend ${count} dishes that best match my needs.`
         category.items.forEach(item => {
           if (fallback.length < count && greasyDishes.includes(item.name)) {
             fallback.push({
-              id: `${category.category}-${item.name}`,
+              id: item.id,
               name: item.name,
-              english_name: item.english_name,
               price: item.price,
-              category: category.category,
-              reason: '适合喜欢油腻口味的推荐'
+              category: item.category,
+              reason: '适合喜欢油腻口味的推荐',
+              description: item.description,
+              spicyLevel: item.spicyLevel
             });
           }
         });
@@ -141,12 +169,13 @@ Please recommend ${count} dishes that best match my needs.`
       category.items.forEach(item => {
         if (fallback.length < count) {
           fallback.push({
-            id: `${category.category}-${item.name}`,
+            id: item.id,
             name: item.name,
-            english_name: item.english_name,
             price: item.price,
-            category: category.category,
-            reason: '推荐的热门菜品'
+            category: item.category,
+            reason: '推荐的热门菜品',
+            description: item.description,
+            spicyLevel: item.spicyLevel
           });
         }
       });
@@ -193,11 +222,12 @@ export async function POST(request: NextRequest) {
               },
               count: {
                 type: "number",
-                description: "Number of dishes to recommend",
-                default: 5
+                description: "Number of dishes to recommend (MUST be between 1-6. Decide intelligently based on budget and context - e.g., 2-3 for small budgets, 4-6 for larger budgets, fewer if only specific items match preferences)",
+                minimum: 1,
+                maximum: 6
               }
             },
-            required: ["budget", "preferences"]
+            required: ["budget", "preferences", "count"]
           }
         }
       }
@@ -205,18 +235,69 @@ export async function POST(request: NextRequest) {
 
     // Build messages array with conversation history
     const messages = [
-      {
-        role: "system" as const,
-        content: `You are a helpful Chinese restaurant AI assistant. You can:
+              {
+          role: "system" as const,
+          content: `你是一个非常有经验的餐厅美食顾问，不只是简单的点菜助手，而是真正懂用户、懂美食、懂搭配的专业顾问。你的目标是让用户既吃得满意，又能体验到超出预期的美食享受。
 
-1. **Recommend dishes** - When users ask for food recommendations, provide their budget/preferences, or want to see menu options, use the recommend_dishes function.
+## 🎯 核心策略：探索式服务 + 巧妙升级
 
-2. **General chat** - For other questions about the restaurant, ingredients, cooking methods, or general conversation, respond directly in Chinese.
+### 【流程1：探索式开场】
+**永远不要一开始就问预算！** 而是要：
+1. **场景感知**：询问用餐场合、人数、心情
+   - "今天是什么场合呀？和朋友聚餐还是家人聚会？"
+   - "几位用餐？看起来心情不错呢！"
+   
+2. **兴趣探索**：通过"你试过XX吗？"来了解用户开放度
+   - "平时喜欢什么口味呀？川菜湘菜还是清淡一些的？"
+   - "你们试过我们的XX吗？很多客人都说..."
+   
+3. **背景挖掘**：自然地了解用户类型
+   - 保守型：喜欢熟悉的、安全的选择
+   - 冒险型：愿意尝试新鲜的、特色的
+   - 价值型：注重性价比和品质
 
-Always be friendly, helpful, and respond in Chinese (Simplified). If someone asks for recommendations but doesn't provide budget or preferences, ask them for that information first.
+### 【流程2：需求雕刻式推荐】
+分三个层次进行推荐：
 
-Our menu includes: burgers, drinks, hot dishes, and side dishes with various price ranges.`
-      },
+**第一层：信任建立（1-2道菜）**
+- 选择用户偏好范围内的安全选择
+- 强调"这个特别受欢迎"、"很多客人都点"
+- 价格适中，让用户放心
+
+**第二层：边界探索（1道菜）**  
+- 轻微超出用户预期，但有合理解释
+- "这个稍微特别一点，但绝对值得试试"
+- "你们既然来了，不试试我们的招牌有点可惜"
+
+**第三层：价值挖掘（1-2道菜）**
+- 推荐高价值菜品，但要有说服逻辑
+- 强调稀缺性、体验感、完整性
+- "今天限量"、"很多人专门来吃这个"、"配个汤就完美了"
+
+### 🎭 对话技巧库：
+- **社会认同**："这道菜是我们的网红菜"
+- **权威推荐**："主厨特别推荐这个搭配"
+- **稀缺性**："今天限量，卖完就没了"
+- **损失规避**："不试试会有点可惜"
+- **完整体验**："再来个XX就完美了"
+- **价值塑造**："虽然贵一点，但真的物超所值"
+
+### 📋 推荐规则：
+使用recommend_dishes函数时：
+- 初次推荐：2-3道菜，体现层次搭配
+- 追加推荐：1-2道菜，补充完整性
+- 根据用户反应动态调整策略
+- 永远不要超过6道菜
+
+### 🗣️ 语言风格：
+- 热情但不过度推销
+- 专业但不居高临下  
+- 像老朋友推荐美食一样自然
+- 用"你们"而不是"您"，更亲近
+- 适当使用emoji，增加亲和力
+
+记住：你不是在卖菜，而是在创造美食体验！每一次推荐都要有理由，每一个建议都要有价值。`
+        },
       // Add conversation history
       ...conversationHistory,
       {
@@ -227,7 +308,7 @@ Our menu includes: burgers, drinks, hot dishes, and side dishes with various pri
 
     // Let OpenAI decide whether to use function calling or respond directly
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o",
       messages,
       tools,
       tool_choice: "auto", // Let the model decide when to use functions
@@ -246,10 +327,13 @@ Our menu includes: burgers, drinks, hot dishes, and side dishes with various pri
           const args = JSON.parse(toolCall.function.arguments);
           console.log('Function call args:', args);
           
+                    // Validate count is within limits
+          const requestedCount = Math.min(Math.max(args.count || 3, 1), 6);
+          
           const recommendations = await getLLMRecommendations(
             args.budget || budget, 
             args.preferences || preferences, 
-            args.count || 5
+            requestedCount
           );
           
           console.log('LLM Recommendations result:', recommendations);

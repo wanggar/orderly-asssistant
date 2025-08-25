@@ -3,10 +3,11 @@
 export interface MenuRecommendation {
   id: string;
   name: string;
-  english_name: string;
-  price: string;
+  price: number;
   category: string;
   reason: string;
+  description?: string;
+  spicyLevel?: number;
 }
 
 export interface ChatRequest {

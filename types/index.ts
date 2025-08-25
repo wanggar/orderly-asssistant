@@ -6,6 +6,8 @@ export interface UserProfile {
   preferences?: string[];
   restrictions?: string[];
   mood?: string;
+  peopleCount?: string;
+  preference?: string;
 }
 
 export interface MenuItem {
@@ -13,10 +15,16 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
-  image: string;
+  image?: string;
   category: string;
   spicyLevel?: number;
   ingredients: string[];
+  nutrition?: {
+    calories: number;
+    carbs: number;
+    protein: number;
+    fat: number;
+  };
   recommendations?: string;
   reviews?: Review[];
 }
@@ -44,7 +52,7 @@ export interface Message {
 
 export interface ChatState {
   messages: Message[];
-  currentStep: 'welcome' | 'people-count' | 'budget' | 'cuisine-preference' | 'preferences' | 'recommendations' | 'chat' | 'confirmation';
+  currentStep: 'welcome' | 'people-count' | 'exploration' | 'preference-exploration' | 'budget' | 'cuisine-preference' | 'preferences' | 'recommendations' | 'chat' | 'confirmation';
   userProfile: UserProfile;
   cart: CartItem[];
   selectedDish: MenuItem | null;
