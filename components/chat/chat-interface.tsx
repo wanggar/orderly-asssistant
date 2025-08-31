@@ -35,6 +35,7 @@ export function ChatInterface() {
   const [menuSidebarOpen, setMenuSidebarOpen] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastCartMessageTime = useRef<number>(0);
 
   // Load messages from localStorage on mount
   useEffect(() => {
@@ -83,18 +84,88 @@ export function ChatInterface() {
       }));
   };
 
+  // Helper function to send cart update message to AI
+  const sendCartUpdateMessage = async (dish: MenuItem, action: 'added' | 'increased', newQuantity: number) => {
+    // Debounce: prevent sending too many messages in quick succession
+    const now = Date.now();
+    if (now - lastCartMessageTime.current < 2000) { // 2 second debounce
+      return;
+    }
+    lastCartMessageTime.current = now;
+
+    const message = action === 'added' 
+      ? `把${dish.name}加入了购物车。`
+      : `把${dish.name}的数量增加到了${newQuantity}份。`;
+    
+    // Create user message
+    const userMessage = {
+      id: Date.now().toString(),
+      type: 'user' as const,
+      content: message,
+      timestamp: new Date()
+    };
+    
+    // Add user message
+    addMessage(userMessage);
+
+    setIsTyping(true);
+
+    try {
+      // Build conversation history including the new message
+      const conversationHistory = [
+        ...buildConversationHistory(),
+        { role: 'user' as const, content: message }
+      ];
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          conversationHistory
+        }),
+      });
+
+      const data = await response.json();
+      
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: data.message,
+        recommendedDishes: data.recommendedDishes,
+        optionPicks: data.optionPicks
+      });
+    } catch (error) {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+      });
+    }
+  };
+
   // Cart management functions
   const addToCart = (dish: MenuItem) => {
     setCart(prev => {
       const existingItem = prev.find(item => item.id === dish.id);
       if (existingItem) {
+        const newQuantity = existingItem.quantity + 1;
+        // Send message about quantity increase
+        sendCartUpdateMessage(dish, 'increased', newQuantity);
         return prev.map(item =>
           item.id === dish.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: newQuantity }
             : item
         );
+      } else {
+        // Send message about adding new item
+        sendCartUpdateMessage(dish, 'added', 1);
+        return [...prev, { ...dish, quantity: 1 }];
       }
-      return [...prev, { ...dish, quantity: 1 }];
     });
   };
 
@@ -162,14 +233,15 @@ export function ChatInterface() {
   };
 
   const clearConversationHistory = () => {
-    if (confirm('确定要清空和小熊的聊天记录吗？')) {
+    if (confirm('确定要清空和小熊的聊天记录吗？购物车内容也会一并清空哦~')) {
       localStorage.removeItem('chat-messages');
       setMessages([]);
+      setCart([]); // 同时清空购物车
     }
   };
 
   const handlePeopleCountSelect = async (count: number) => {
-    const message = count >= 5 ? `我们${count}人以上用餐。` : `我们${count}人用餐。`;
+    const message = count >= 5 ? `${count}人以上用餐。` : `${count}人用餐。`;
     
     // Add user message
     addMessage({
