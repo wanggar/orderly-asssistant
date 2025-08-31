@@ -33,7 +33,7 @@ export function DishCard({ dish, quantity, onAddToCart, onUpdateQuantity, onView
     <Card className="border-none shadow-sm bg-white/50 hover:shadow-md transition-shadow">
       <CardContent className="p-3">
         {/* Dish Image */}
-        <div className="w-full h-24 bg-[#FFF5EB] rounded-lg overflow-hidden mb-3">
+        <div className="w-full h-30 bg-[#FFF5EB] rounded-lg overflow-hidden mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={`/menu_photos/${dish.id}.jpeg`}

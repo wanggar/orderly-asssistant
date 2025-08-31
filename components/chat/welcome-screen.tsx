@@ -1,38 +1,16 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Utensils, Users, MessageCircle, Clock } from "lucide-react";
+
+
 
 interface WelcomeScreenProps {
   onStartChat: () => void;
   onSelectPeopleCount: (count: number) => void;
 }
 
-export function WelcomeScreen({ onStartChat: _, onSelectPeopleCount }: WelcomeScreenProps) {
-  // Features list for welcome screen display
-  const features = [
-    {
-      icon: <Utensils className="w-6 h-6 text-[#FF6B2D]" />,
-      title: "智能推荐",
-      description: "根据你的口味和预算推荐最合适的菜品"
-    },
-    {
-      icon: <Users className="w-6 h-6 text-[#FF6B2D]" />,
-      title: "多人聚餐",
-      description: "支持多人点菜，自动整合所有人的偏好"
-    },
-    {
-      icon: <MessageCircle className="w-6 h-6 text-[#FF6B2D]" />,
-      title: "自然对话",
-      description: "像和朋友聊天一样轻松完成点菜"
-    },
-    {
-      icon: <Clock className="w-6 h-6 text-[#FF6B2D]" />,
-      title: "快速高效",
-      description: "几个问题就能生成完整菜单，节省时间"
-    }
-  ];
+export function WelcomeScreen({ onSelectPeopleCount }: WelcomeScreenProps) {
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">

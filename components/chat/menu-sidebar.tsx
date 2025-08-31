@@ -31,7 +31,7 @@ const spicyLevelText = {
   2: '中辣'
 };
 
-export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, onViewDetails: _, isOpen, onToggle, navigationDish }: MenuSidebarProps) {
+export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, isOpen, onToggle, navigationDish }: MenuSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['热菜', '主食']));
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);

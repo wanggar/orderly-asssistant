@@ -50,8 +50,8 @@ export function ChatInterface() {
           ...msg,
           timestamp: new Date(msg.timestamp)
         })));
-      } catch (_error) {
-        console.error('Error loading messages from localStorage:', _error);
+      } catch {
+        console.error('Error loading messages from localStorage');
       }
     }
   }, []);
@@ -141,7 +141,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (_error) {
+    } catch {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -240,7 +240,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (_error) {
+    } catch {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -292,7 +292,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (_error) {
+    } catch {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -337,7 +337,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (_error) {
+    } catch {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
