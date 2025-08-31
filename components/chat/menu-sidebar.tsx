@@ -166,12 +166,12 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
                                         🌶️ {spicyLevelText[dish.spicyLevel as keyof typeof spicyLevelText]}
                                       </Badge>
                                     )}
-                                    <Badge 
+                                    {/* <Badge 
                                       variant="outline" 
                                       className="text-xs bg-amber-50 text-amber-700 border-amber-200"
                                     >
                                       ⚡ {dish.nutrition && dish.nutrition.calories}卡
-                                    </Badge>
+                                    </Badge> */}
                                   </div>
 
                                   {/* Quantity Controls */}

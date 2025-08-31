@@ -6,9 +6,10 @@ import { Utensils, Users, MessageCircle, Clock } from "lucide-react";
 
 interface WelcomeScreenProps {
   onStartChat: () => void;
+  onSelectPeopleCount: (count: number) => void;
 }
 
-export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
+export function WelcomeScreen({ onStartChat, onSelectPeopleCount }: WelcomeScreenProps) {
   const features = [
     {
       icon: <Utensils className="w-6 h-6 text-[#FF6B2D]" />,
@@ -54,15 +55,32 @@ export function WelcomeScreen({ onStartChat }: WelcomeScreenProps) {
         ))}
       </div>
       
-      <Button
-        onClick={onStartChat}
-        className="bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 text-white font-medium px-8 py-3 text-lg"
-      >
-        开始点菜 🚀
-      </Button>
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-[#333333] mb-6">请问有几位用餐呢？</h2>
+        
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {[1, 2, 3, 4].map((count) => (
+            <Button
+              key={count}
+              onClick={() => onSelectPeopleCount(count)}
+              variant="outline"
+              className="w-16 h-16 rounded-full border-2 border-[#FF6B2D] text-[#FF6B2D] hover:bg-[#FF6B2D] hover:text-white font-medium text-lg transition-all duration-200"
+            >
+              {count}人
+            </Button>
+          ))}
+          <Button
+            onClick={() => onSelectPeopleCount(5)}
+            variant="outline"
+            className="px-4 h-16 rounded-full border-2 border-[#FF6B2D] text-[#FF6B2D] hover:bg-[#FF6B2D] hover:text-white font-medium text-lg transition-all duration-200"
+          >
+            5人+
+          </Button>
+        </div>
+      </div>
       
-      <p className="text-sm text-gray-500 mt-4">
-        首先告诉我有几个人用餐吧～
+      <p className="text-sm text-gray-500">
+        选择人数后，小熊会为您推荐最合适的菜品组合～
       </p>
     </div>
   );

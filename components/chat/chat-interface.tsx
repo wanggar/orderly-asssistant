@@ -8,6 +8,7 @@ import { MessageBubble } from './message-bubble';
 import { TypingIndicator } from './typing-indicator';
 import { DishCard } from './dish-card';
 import { MenuSidebar } from './menu-sidebar';
+import { WelcomeScreen } from './welcome-screen';
 import { CartDialog } from '@/components/cart/cart-dialog';
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
@@ -26,7 +27,7 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [menuSidebarOpen, setMenuSidebarOpen] = useState(false);
+  const [menuSidebarOpen, setMenuSidebarOpen] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -161,6 +162,49 @@ export function ChatInterface() {
     }
   };
 
+  const handlePeopleCountSelect = async (count: number) => {
+    const message = count >= 5 ? `我们${count}人以上用餐。` : `我们${count}人用餐。`;
+    
+    // Add user message
+    addMessage({
+      id: Date.now().toString(),
+      type: 'user',
+      content: message
+    });
+
+    setIsTyping(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          conversationHistory: []
+        }),
+      });
+
+      const data = await response.json();
+      
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: data.message,
+        recommendedDishes: data.recommendedDishes
+      });
+    } catch (error) {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+      });
+    }
+  };
+
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -214,12 +258,10 @@ export function ChatInterface() {
           <ScrollArea className="flex-1 px-4 py-4 h-full overflow-hidden" ref={scrollAreaRef}>
             <div className="max-w-2xl mx-auto space-y-4">
               {messages.length === 0 ? (
-                <div className="text-center text-gray-500 mt-8">
-                  <div className="text-6xl mb-4">🐻</div>
-                  <h2 className="text-xl font-semibold mb-2">欢迎来到小满熊汉堡！</h2>
-                  <p className="text-gray-400">我是店里的小熊，很高兴为您推荐美味的中式料理~</p>
-                  <p className="text-sm text-gray-400 mt-2">快来和我聊聊，告诉我您想吃什么吧！🍜</p>
-                </div>
+                <WelcomeScreen 
+                  onStartChat={() => {}} 
+                  onSelectPeopleCount={handlePeopleCountSelect}
+                />
               ) : (
                 <>
                   {messages.map((message) => (
