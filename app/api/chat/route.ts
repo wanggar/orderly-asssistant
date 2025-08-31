@@ -6,23 +6,44 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Create a system prompt with menu information
+// Interface for AI response structure
+interface AIResponse {
+  message: string;
+  recommendations?: {
+    dishId: string;
+    reason: string;
+    confidence: number;
+  }[];
+}
+
+// Create a system prompt with menu information for JSON mode
 const createMenuSystemPrompt = () => {
   const menuText = menuData.map(dish => 
-    `${dish.name} (${dish.category}) - ¥${dish.price} - ${dish.description} - 辣度: ${dish.spicyLevel}/2 - 配料: ${dish.ingredients.join('、')}`
+    `${dish.id}: ${dish.name} (${dish.category}) - ¥${dish.price} - ${dish.description} - 辣度: ${dish.spicyLevel}/2 - 配料: ${dish.ingredients.join('、')}`
   ).join('\n');
 
-  return `你是一位中餐厅的智能助手。你可以根据客户的喜好为推荐菜单上的美食。
+  return `你是一位中餐厅的智能助手。根据客户需求推荐菜品，必须返回JSON格式。
 
-我们的菜单:
+菜单数据:
 ${menuText}
 
-当顾客询问菜品时:
-- 根据顾客需求推荐相关菜品
-- 说菜品
-- 口语化
+响应规则:
+1. 根据客户需求推荐相关菜品
+2. 回复要自然、口语化
+3. 如果推荐菜品，在recommendations数组中包含菜品ID、推荐理由和信心度(0-1)
+4. 如果没有合适推荐，recommendations为空数组
 
-如果顾客询问菜单上没有的菜品,请礼貌告知。`;
+JSON格式:
+{
+  "message": "自然语言回复内容",
+  "recommendations": [
+    {
+      "dishId": "菜品ID(必须来自菜单)",
+      "reason": "推荐理由",
+      "confidence": 0.9
+    }
+  ]
+}`;
 };
 
 export async function POST(request: NextRequest) {
@@ -52,14 +73,43 @@ export async function POST(request: NextRequest) {
       model: "gpt-4o",
       messages,
       temperature: 0.7,
-      max_tokens: 300
+      max_tokens: 400,
+      response_format: { type: "json_object" } // Enable JSON mode
     });
 
-    const assistantMessage = response.choices[0].message;
+    const responseContent = response.choices[0].message.content || "{}";
+    
+    try {
+      const parsed: AIResponse = JSON.parse(responseContent);
+      
+      // Extract recommended dishes based on AI's structured response
+      const recommendedDishes = parsed.recommendations 
+        ? menuData.filter(dish => 
+            parsed.recommendations!.some(rec => rec.dishId === dish.id)
+          ).map(dish => {
+            const recommendation = parsed.recommendations!.find(rec => rec.dishId === dish.id);
+            return {
+              ...dish,
+              recommendationReason: recommendation?.reason,
+              confidence: recommendation?.confidence
+            };
+          })
+        : [];
 
-    return NextResponse.json({
-      message: assistantMessage.content || "I'm sorry, I couldn't generate a response."
-    });
+      return NextResponse.json({
+        message: parsed.message || "抱歉，我无法生成回复。",
+        recommendedDishes: recommendedDishes.length > 0 ? recommendedDishes : undefined
+      });
+      
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Raw response:', responseContent);
+      
+      // Fallback to original message if JSON parsing fails
+      return NextResponse.json({
+        message: responseContent || "抱歉，我遇到了一些问题。请重试。"
+      });
+    }
 
   } catch (error) {
     console.error('OpenAI API error:', error);
