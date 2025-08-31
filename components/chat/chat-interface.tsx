@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MessageBubble } from './message-bubble';
 import { TypingIndicator } from './typing-indicator';
 import { DishCard } from './dish-card';
+import { OptionsSelector } from './options-selector';
 import { CartDialog } from '@/components/cart/cart-dialog';
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
+
+// StrictMode 下首次挂载会触发两次 effect，这里用 sessionStorage 作为一次性保护
+const WELCOME_SHOWN_KEY = 'welcome-shown-v1';
 
 interface Message {
   id: string;
@@ -17,7 +21,12 @@ interface Message {
   content: string;
   timestamp: Date;
   recommendedDishes?: MenuItem[];
+  options?: string[];
+  onOptionSelect?: (option: string) => void;
 }
+
+// 对话状态
+type ConversationStep = 'welcome' | 'people_count' | 'dining_scenario' | 'chatting';
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -25,31 +34,111 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [conversationStep, setConversationStep] = useState<ConversationStep>('welcome');
+  const [peopleCount, setPeopleCount] = useState<string>('');
+  const [diningScenario, setDiningScenario] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load messages from localStorage on mount
+  // 人数选项
+  const peopleOptions = ['1人', '2人', '3-4人', '5-6人', '7人以上'];
+  
+  // 根据人数获取对应的就餐场景选项
+  const getScenarioOptions = (peopleCount: string) => {
+    switch (peopleCount) {
+      case '1人':
+        return [
+          '工作日午餐',
+          '下班犒劳自己', 
+          '深夜觅食',
+          '周末独享'
+        ];
+      case '2人':
+        return [
+          '情侣约会',
+          '朋友叙旧',
+          '同事聚餐'
+        ];
+      case '3-4人':
+        return [
+          '朋友聚会',
+          '小型家庭聚餐',
+          '室友聚餐'
+        ];
+      case '5-6人':
+        return [
+          '周末家庭聚餐',
+          '朋友聚会',
+          '庆祝聚餐'
+        ];
+      case '7人以上':
+        return [
+          '大家庭聚餐',
+          '朋友大聚会',
+          '特殊庆祝'
+        ];
+      default:
+        return ['朋友聚会'];
+    }
+  };
+
+
+
+  // Load messages from localStorage on mount and rehydrate option handlers
   useEffect(() => {
     const savedMessages = localStorage.getItem('chat-messages');
+    const savedStep = localStorage.getItem('conversation-step');
+    const savedPeopleCount = localStorage.getItem('people-count');
+    const savedDiningScenario = localStorage.getItem('dining-scenario');
+    
     if (savedMessages) {
       try {
         const parsedMessages = JSON.parse(savedMessages);
-        setMessages(parsedMessages.map((msg: any) => ({
+        const restored = parsedMessages.map((msg: any) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
-        })));
+        }));
+
+        // 回填 options 的点击处理函数（localStorage 不保存函数）
+        for (let i = restored.length - 1; i >= 0; i--) {
+          const msg = restored[i];
+          if (msg.type === 'ai' && Array.isArray(msg.options) && !msg.onOptionSelect) {
+            const step = (savedStep as ConversationStep) || 'people_count';
+            if (step === 'people_count') {
+              msg.onOptionSelect = handlePeopleCountSelect;
+            } else if (step === 'dining_scenario') {
+              msg.onOptionSelect = handleScenarioSelect;
+            }
+            break;
+          }
+        }
+
+        setMessages(restored);
       } catch (error) {
         console.error('Error loading messages from localStorage:', error);
       }
     }
+    
+    if (savedStep) {
+      setConversationStep(savedStep as ConversationStep);
+    }
+    if (savedPeopleCount) {
+      setPeopleCount(savedPeopleCount);
+    }
+    if (savedDiningScenario) {
+      setDiningScenario(savedDiningScenario);
+    }
   }, []);
 
-  // Save messages to localStorage whenever they change
+  // Save conversation state to localStorage
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem('chat-messages', JSON.stringify(messages));
     }
-  }, [messages]);
+    localStorage.setItem('conversation-step', conversationStep);
+    localStorage.setItem('people-count', peopleCount);
+    localStorage.setItem('dining-scenario', diningScenario);
+  }, [messages, conversationStep, peopleCount, diningScenario]);
 
   // Auto scroll to bottom when messages change
   useEffect(() => {
@@ -64,6 +153,108 @@ export function ChatInterface() {
   const addMessage = (message: Omit<Message, 'timestamp'>) => {
     setMessages(prev => [...prev, { ...message, timestamp: new Date() }]);
   };
+
+  // 处理场景选择
+  const handleScenarioSelect = useCallback((scenario: string) => {
+    setDiningScenario(scenario);
+    addMessage({
+      id: 'user-scenario-' + Date.now(),
+      type: 'user',
+      content: scenario
+    });
+
+    setIsTyping(true);
+    setConversationStep('chatting');
+
+    // 发送到API获取基于场景的推荐
+    setTimeout(async () => {
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `我们是${peopleCount}，${scenario}，请为我们推荐合适的菜品`,
+            conversationHistory: [],
+            peopleCount,
+            diningScenario: scenario,
+            isInitialRecommendation: true
+          }),
+        });
+
+        const data = await response.json();
+        
+        setIsTyping(false);
+        addMessage({
+          id: 'recommendation-' + Date.now(),
+          type: 'ai',
+          content: data.message,
+          recommendedDishes: data.recommendedDishes
+        });
+      } catch (error) {
+        setIsTyping(false);
+        addMessage({
+          id: 'error-' + Date.now(),
+          type: 'ai',
+          content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+        });
+      }
+    }, 1000);
+  }, [peopleCount]);
+
+  // 处理人数选择
+  const handlePeopleCountSelect = useCallback((count: string) => {
+    setPeopleCount(count);
+    addMessage({
+      id: 'user-people-' + Date.now(),
+      type: 'user',
+      content: count
+    });
+
+    setTimeout(() => {
+      const scenarioOptions = getScenarioOptions(count);
+      addMessage({
+        id: 'scenario-' + Date.now(),
+        type: 'ai',
+        content: `好的，${count}用餐！🍽️ 请问今天是什么场合呢？我会根据不同的就餐场景为您推荐最合适的菜品组合哦~`,
+        options: scenarioOptions,
+        onOptionSelect: handleScenarioSelect
+      });
+      setConversationStep('dining_scenario');
+    }, 800);
+  }, [handleScenarioSelect]);
+
+  // 显示欢迎消息（防止重复）
+  const showWelcomeMessage = useCallback(() => {
+    const alreadyAskPeople = messages.some(m => m.type === 'ai' && Array.isArray(m.options));
+    if (alreadyAskPeople) return;
+
+    addMessage({
+      id: 'welcome-' + Date.now(),
+      type: 'ai',
+      content: '你好呀！欢迎来到小满熊汉堡！🐻✨ 我是店里的可爱小熊，很高兴为您服务~ 请问今天有几位用餐呢？',
+      options: peopleOptions,
+      onOptionSelect: handlePeopleCountSelect
+    });
+    setConversationStep('people_count');
+  }, [messages, peopleOptions, handlePeopleCountSelect]);
+
+  // Initialize welcome message once (StrictMode safe)
+  useEffect(() => {
+    const alreadyInserted = typeof window !== 'undefined'
+      ? sessionStorage.getItem(WELCOME_SHOWN_KEY)
+      : '1';
+
+    if (!alreadyInserted && messages.length === 0 && conversationStep === 'welcome') {
+      sessionStorage.setItem(WELCOME_SHOWN_KEY, '1');
+      setTimeout(() => {
+        showWelcomeMessage();
+      }, 300);
+    }
+  }, [showWelcomeMessage, messages.length, conversationStep]);
+
+
 
   // Helper function to build conversation history for API calls
   const buildConversationHistory = () => {
@@ -129,7 +320,9 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory
+          conversationHistory,
+          peopleCount,
+          diningScenario
         }),
       });
 
@@ -153,9 +346,22 @@ export function ChatInterface() {
   };
 
   const clearConversationHistory = () => {
-    if (confirm('确定要清空和小熊的聊天记录吗？')) {
+    if (confirm('确定要重新开始和小熊的对话吗？')) {
       localStorage.removeItem('chat-messages');
+      localStorage.removeItem('conversation-step');
+      localStorage.removeItem('people-count');
+      localStorage.removeItem('dining-scenario');
+      // 清除一次性欢迎消息的插入标志
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(WELCOME_SHOWN_KEY);
+      }
       setMessages([]);
+      setConversationStep('welcome');
+      setPeopleCount('');
+      setDiningScenario('');
+      setTimeout(() => {
+        showWelcomeMessage();
+      }, 500);
     }
   };
 
@@ -171,7 +377,12 @@ export function ChatInterface() {
               <div className="text-2xl">🐻</div>
               <div>
                 <h1 className="text-lg font-semibold text-[#333333]">小满熊汉堡</h1>
-                <p className="text-xs text-gray-500">可爱小熊为您服务</p>
+                <p className="text-xs text-gray-500">
+                  {peopleCount && diningScenario 
+                    ? `${peopleCount} · ${diningScenario}` 
+                    : '可爱小熊为您服务'
+                  }
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -199,7 +410,7 @@ export function ChatInterface() {
                   className="text-gray-600 hover:text-gray-800"
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
-                  清空记录
+                  重新开始
                 </Button>
               )}
             </div>
@@ -215,13 +426,25 @@ export function ChatInterface() {
                   <div className="text-6xl mb-4">🐻</div>
                   <h2 className="text-xl font-semibold mb-2">欢迎来到小满熊汉堡！</h2>
                   <p className="text-gray-400">我是店里的小熊，很高兴为您推荐美味的中式料理~</p>
-                  <p className="text-sm text-gray-400 mt-2">快来和我聊聊，告诉我您想吃什么吧！🍜</p>
+                  <p className="text-sm text-gray-400 mt-2">正在准备为您服务...</p>
                 </div>
               ) : (
                 <>
                   {messages.map((message) => (
                     <div key={message.id} className="animate-fade-in space-y-3">
                       <MessageBubble message={message} isUser={message.type === 'user'} />
+                      
+                      {/* Render options selector for AI messages with options */}
+                      {message.type === 'ai' && message.options && message.onOptionSelect && (
+                        <div className="flex justify-start">
+                          <div className="max-w-[75%]">
+                            <OptionsSelector
+                              options={message.options}
+                              onSelect={message.onOptionSelect}
+                            />
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Render dish cards if AI recommended dishes */}
                       {message.type === 'ai' && message.recommendedDishes && message.recommendedDishes.length > 0 && (
@@ -256,16 +479,20 @@ export function ChatInterface() {
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="和小熊说说您想吃什么..."
+                placeholder={
+                  conversationStep === 'chatting' 
+                    ? "和小熊说说您想吃什么..." 
+                    : "小熊正在等待您的选择..."
+                }
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1"
-                disabled={isTyping}
+                disabled={isTyping || conversationStep !== 'chatting'}
               />
               <Button
                 onClick={handleSendMessage}
                 className="bg-[#FF6B2D] hover:bg-[#FF6B2D]/90"
                 size="icon"
-                disabled={isTyping}
+                disabled={isTyping || conversationStep !== 'chatting'}
               >
                 <Send className="w-4 h-4" />
               </Button>

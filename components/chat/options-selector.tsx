@@ -23,7 +23,7 @@ export function OptionsSelector({
           variant={selected.includes(option) ? "default" : "outline"}
           size="sm"
           onClick={() => onSelect(option)}
-          className="rounded-full text-sm font-medium"
+          className="rounded-full text-sm font-medium bg-white border-[#FF6B2D] text-[#FF6B2D] hover:bg-[#FF6B2D] hover:text-white transition-colors"
         >
           {option}
         </Button>
