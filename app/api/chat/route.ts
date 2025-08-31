@@ -11,8 +11,6 @@ interface AIResponse {
   message: string;
   recommendations?: {
     dishId: string;
-    reason: string;
-    confidence: number;
   }[];
 }
 
@@ -30,7 +28,7 @@ ${menuText}
 响应规则:
 1. 根据客户需求推荐相关菜品
 2. 回复要自然、口语化
-3. 如果推荐菜品，在recommendations数组中包含菜品ID、推荐理由和信心度(0-1)
+3. 如果推荐菜品，在recommendations数组中包含菜品ID
 4. 如果没有合适推荐，recommendations为空数组
 
 JSON格式:
@@ -38,9 +36,7 @@ JSON格式:
   "message": "自然语言回复内容",
   "recommendations": [
     {
-      "dishId": "菜品ID(必须来自菜单)",
-      "reason": "推荐理由",
-      "confidence": 0.9
+      "dishId": "菜品ID(必须来自菜单)"
     }
   ]
 }`;
@@ -86,14 +82,7 @@ export async function POST(request: NextRequest) {
       const recommendedDishes = parsed.recommendations 
         ? menuData.filter(dish => 
             parsed.recommendations!.some(rec => rec.dishId === dish.id)
-          ).map(dish => {
-            const recommendation = parsed.recommendations!.find(rec => rec.dishId === dish.id);
-            return {
-              ...dish,
-              recommendationReason: recommendation?.reason,
-              confidence: recommendation?.confidence
-            };
-          })
+          )
         : [];
 
       return NextResponse.json({

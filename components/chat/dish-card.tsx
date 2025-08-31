@@ -43,9 +43,6 @@ export function DishCard({ dish, quantity, onAddToCart, onUpdateQuantity, onView
             <h3 className="font-medium text-[#333333] text-sm leading-tight">{dish.name}</h3>
             <span className="text-[#FF6B2D] font-semibold text-sm">¥{dish.price}</span>
           </div>
-          
-          <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{dish.description}</p>
-          
           <div className="flex flex-wrap gap-1">
             {spicyLevelText && (
               <Badge variant="secondary" className="text-xs bg-red-50 text-red-600 px-2 py-0">

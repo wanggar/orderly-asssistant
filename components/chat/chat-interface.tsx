@@ -11,17 +11,12 @@ import { CartDialog } from '@/components/cart/cart-dialog';
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
 
-interface EnhancedMenuItem extends MenuItem {
-  recommendationReason?: string;
-  confidence?: number;
-}
-
 interface Message {
   id: string;
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
-  recommendedDishes?: EnhancedMenuItem[];
+  recommendedDishes?: MenuItem[];
 }
 
 export function ChatInterface() {
@@ -223,40 +218,19 @@ export function ChatInterface() {
                       
                       {/* Render dish cards if AI recommended dishes */}
                       {message.type === 'ai' && message.recommendedDishes && message.recommendedDishes.length > 0 && (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {message.recommendedDishes.map((dish) => (
-                              <DishCard
-                                key={dish.id}
-                                dish={dish}
-                                quantity={getCartQuantity(dish.id)}
-                                onAddToCart={addToCart}
-                                onUpdateQuantity={updateCartQuantity}
-                                onViewDetails={(dish) => {
-                                  console.log('View details for:', dish.name);
-                                }}
-                              />
-                            ))}
-                          </div>
-                          
-                          {/* Show recommendation reasons */}
-                          {message.recommendedDishes.some(dish => dish.recommendationReason) && (
-                            <div className="bg-blue-50 rounded-lg p-3 space-y-2">
-                              <h4 className="text-sm font-medium text-blue-900">💡 推荐理由</h4>
-                              {message.recommendedDishes
-                                .filter(dish => dish.recommendationReason)
-                                .map(dish => (
-                                  <div key={dish.id} className="text-sm text-blue-800">
-                                    <span className="font-medium">{dish.name}:</span> {dish.recommendationReason}
-                                    {dish.confidence && (
-                                      <span className="ml-2 text-xs bg-blue-200 px-2 py-1 rounded">
-                                        信心度: {Math.round(dish.confidence * 100)}%
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                            </div>
-                          )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                          {message.recommendedDishes.map((dish) => (
+                            <DishCard
+                              key={dish.id}
+                              dish={dish}
+                              quantity={getCartQuantity(dish.id)}
+                              onAddToCart={addToCart}
+                              onUpdateQuantity={updateCartQuantity}
+                              onViewDetails={(dish) => {
+                                console.log('View details for:', dish.name);
+                              }}
+                            />
+                          ))}
                         </div>
                       )}
                     </div>
