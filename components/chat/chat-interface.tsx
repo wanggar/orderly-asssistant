@@ -94,8 +94,8 @@ export function ChatInterface() {
     lastCartMessageTime.current = now;
 
     const message = action === 'added' 
-      ? `把${dish.name}加入了购物车。`
-      : `把${dish.name}的数量增加到了${newQuantity}份。`;
+      ? `把${dish.name}加入购物车。`
+      : `把${dish.name}的数量增加到${newQuantity}份。`;
     
     // Create user message
     const userMessage = {
