@@ -11,6 +11,7 @@ import { MenuSidebar } from './menu-sidebar';
 import { WelcomeScreen } from './welcome-screen';
 import { OptionChips } from './option-chips';
 import { CartDialog } from '@/components/cart/cart-dialog';
+
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
 
@@ -33,6 +34,8 @@ export function ChatInterface() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [menuSidebarOpen, setMenuSidebarOpen] = useState(true);
+  const [navigationDish, setNavigationDish] = useState<MenuItem | null>(null);
+
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastCartMessageTime = useRef<number>(0);
@@ -43,12 +46,12 @@ export function ChatInterface() {
     if (savedMessages) {
       try {
         const parsedMessages = JSON.parse(savedMessages);
-        setMessages(parsedMessages.map((msg: any) => ({
+        setMessages(parsedMessages.map((msg: Omit<Message, 'timestamp'> & { timestamp: string }) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         })));
-      } catch (error) {
-        console.error('Error loading messages from localStorage:', error);
+      } catch (_error) {
+        console.error('Error loading messages from localStorage:', _error);
       }
     }
   }, []);
@@ -138,7 +141,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (error) {
+    } catch (_error) {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -185,6 +188,21 @@ export function ChatInterface() {
     return cart.find(item => item.id === dishId)?.quantity || 0;
   };
 
+  const handleNavigateToMenuDetails = (dish: MenuItem) => {
+    // 确保菜单侧边栏打开
+    if (!menuSidebarOpen) {
+      setMenuSidebarOpen(true);
+    }
+    
+    // 设置导航菜品并清空之前的导航状态
+    setNavigationDish(null);
+    setTimeout(() => {
+      setNavigationDish(dish);
+    }, 100);
+  };
+
+
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -222,7 +240,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (error) {
+    } catch (_error) {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -274,7 +292,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (error) {
+    } catch (_error) {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -319,7 +337,7 @@ export function ChatInterface() {
         recommendedDishes: data.recommendedDishes,
         optionPicks: data.optionPicks
       });
-    } catch (error) {
+    } catch (_error) {
       setIsTyping(false);
       addMessage({
         id: (Date.now() + 1).toString(),
@@ -402,9 +420,7 @@ export function ChatInterface() {
                               quantity={getCartQuantity(dish.id)}
                               onAddToCart={addToCart}
                               onUpdateQuantity={updateCartQuantity}
-                              onViewDetails={(dish) => {
-                                console.log('View details for:', dish.name);
-                              }}
+                              onViewDetails={handleNavigateToMenuDetails}
                             />
                           ))}
                         </div>
@@ -469,9 +485,13 @@ export function ChatInterface() {
         onAddToCart={addToCart}
         onUpdateQuantity={updateCartQuantity}
         getCartQuantity={getCartQuantity}
+        onViewDetails={() => {}}
         isOpen={menuSidebarOpen}
         onToggle={() => setMenuSidebarOpen(!menuSidebarOpen)}
+        navigationDish={navigationDish}
       />
+
+
     </div>
   );
 }

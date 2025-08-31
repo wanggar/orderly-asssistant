@@ -79,8 +79,24 @@ export function DishDetailsPanel({
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-6 pb-8">
             {/* Dish Image */}
-            <div className="w-full h-48 bg-[#FFF5EB] rounded-lg flex items-center justify-center">
-              <div className="text-6xl">🍽️</div>
+            <div className="w-full h-48 bg-[#FFF5EB] rounded-lg overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={`/menu_photos/${dish.id}.jpeg`}
+                alt={dish.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to emoji if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (fallbackDiv) {
+                    fallbackDiv.style.display = 'flex';
+                  }
+                }}
+              />
+              <div className="w-full h-full bg-[#FFF5EB] rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+                <div className="text-6xl">🍽️</div>
+              </div>
             </div>
             
             {/* Price and Basic Info */}

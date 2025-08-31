@@ -7,18 +7,12 @@ import { ShoppingCart } from "lucide-react";
 
 interface ShoppingCartBarProps {
   items: CartItem[];
-  onUpdateQuantity: (itemId: string, quantity: number) => void;
-  onRemoveItem: (itemId: string) => void;
-  onClearCart: () => void;
   onCheckout: () => void;
   onOpenCart: () => void;
 }
 
 export function ShoppingCartBar({ 
   items, 
-  onUpdateQuantity, 
-  onRemoveItem, 
-  onClearCart, 
   onCheckout,
   onOpenCart
 }: ShoppingCartBarProps) {

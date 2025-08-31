@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Utensils, Users, MessageCircle, Clock } from "lucide-react";
 
 interface WelcomeScreenProps {
@@ -9,7 +9,8 @@ interface WelcomeScreenProps {
   onSelectPeopleCount: (count: number) => void;
 }
 
-export function WelcomeScreen({ onStartChat, onSelectPeopleCount }: WelcomeScreenProps) {
+export function WelcomeScreen({ onStartChat: _, onSelectPeopleCount }: WelcomeScreenProps) {
+  // Features list for welcome screen display
   const features = [
     {
       icon: <Utensils className="w-6 h-6 text-[#FF6B2D]" />,

@@ -33,8 +33,24 @@ export function DishCard({ dish, quantity, onAddToCart, onUpdateQuantity, onView
     <Card className="border-none shadow-sm bg-white/50 hover:shadow-md transition-shadow">
       <CardContent className="p-3">
         {/* Dish Image */}
-        <div className="w-full h-16 bg-[#FFF5EB] rounded-lg flex items-center justify-center mb-3">
-          <div className="text-xl">🍽️</div>
+        <div className="w-full h-24 bg-[#FFF5EB] rounded-lg overflow-hidden mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={`/menu_photos/${dish.id}.jpeg`}
+            alt={dish.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to emoji if image fails to load
+              e.currentTarget.style.display = 'none';
+              const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
+              if (fallbackDiv) {
+                fallbackDiv.style.display = 'flex';
+              }
+            }}
+          />
+          <div className="w-full h-full bg-[#FFF5EB] rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+            <div className="text-xl">🍽️</div>
+          </div>
         </div>
         
         {/* Dish Info */}

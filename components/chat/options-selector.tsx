@@ -12,7 +12,7 @@ interface OptionsSelectorProps {
 export function OptionsSelector({ 
   options, 
   onSelect, 
-  multiSelect = false, 
+  multiSelect: _ = false, 
   selected = [] 
 }: OptionsSelectorProps) {
   return (

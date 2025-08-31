@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CartItem } from "@/types";
-import { ShoppingCart, Plus, Minus, Trash2, X } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 
 interface CartDialogProps {
   isOpen: boolean;
@@ -55,8 +55,24 @@ export function CartDialog({
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     {/* 菜品图片 */}
-                    <div className="w-12 h-12 bg-[#FFF5EB] rounded-lg flex items-center justify-center flex-shrink-0">
-                      <div className="text-xl">🍽️</div>
+                    <div className="w-12 h-12 bg-[#FFF5EB] rounded-lg overflow-hidden flex-shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={`/menu_photos/${item.id}.jpeg`}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to emoji if image fails to load
+                          e.currentTarget.style.display = 'none';
+                          const fallbackDiv = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (fallbackDiv) {
+                            fallbackDiv.style.display = 'flex';
+                          }
+                        }}
+                      />
+                      <div className="w-full h-full bg-[#FFF5EB] rounded-lg flex items-center justify-center" style={{display: 'none'}}>
+                        <div className="text-xl">🍽️</div>
+                      </div>
                     </div>
                     
                     {/* 菜品信息 */}
