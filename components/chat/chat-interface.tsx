@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MessageBubble } from './message-bubble';
 import { TypingIndicator } from './typing-indicator';
 import { DishCard } from './dish-card';
+import { MenuSidebar } from './menu-sidebar';
 import { CartDialog } from '@/components/cart/cart-dialog';
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
@@ -25,6 +26,7 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [menuSidebarOpen, setMenuSidebarOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -163,6 +165,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-screen bg-[#FFFBF5]">
+      {/* Chat Interface - Always full width */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <div className="bg-white border-b border-[#DDDDDD] px-4 py-3 flex-shrink-0">
@@ -285,6 +288,15 @@ export function ChatInterface() {
         onCheckout={() => {
           console.log('Checkout with items:', cart);
         }}
+      />
+
+      {/* Menu Sidebar - Floating overlay */}
+      <MenuSidebar
+        onAddToCart={addToCart}
+        onUpdateQuantity={updateCartQuantity}
+        getCartQuantity={getCartQuantity}
+        isOpen={menuSidebarOpen}
+        onToggle={() => setMenuSidebarOpen(!menuSidebarOpen)}
       />
     </div>
   );
