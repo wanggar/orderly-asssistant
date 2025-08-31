@@ -37,11 +37,11 @@ export function WelcomeScreen({ onStartChat, onSelectPeopleCount }: WelcomeScree
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="text-center mb-8">
         <div className="text-6xl mb-4">🍽️</div>
-        <h1 className="text-3xl font-bold text-[#333333] mb-2">AI 点菜助手</h1>
+        <h1 className="text-3xl font-bold text-[#333333] mb-2">🐻 小满熊点菜助手</h1>
         <p className="text-gray-600 text-lg">让点菜变得简单有趣</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-2xl">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-2xl">
         {features.map((feature, index) => (
           <Card key={index} className="border-none shadow-sm bg-white/50">
             <CardContent className="p-4 text-center">
@@ -53,7 +53,7 @@ export function WelcomeScreen({ onStartChat, onSelectPeopleCount }: WelcomeScree
             </CardContent>
           </Card>
         ))}
-      </div>
+      </div> */}
       
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold text-[#333333] mb-6">请问有几位用餐呢？</h2>

@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AI 点菜助手",
+  title: " 小满熊点菜助手",
   description: "智能点菜助手，让点菜变得简单有趣",
 };
 

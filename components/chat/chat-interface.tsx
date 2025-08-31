@@ -9,6 +9,7 @@ import { TypingIndicator } from './typing-indicator';
 import { DishCard } from './dish-card';
 import { MenuSidebar } from './menu-sidebar';
 import { WelcomeScreen } from './welcome-screen';
+import { OptionChips } from './option-chips';
 import { CartDialog } from '@/components/cart/cart-dialog';
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
@@ -19,6 +20,10 @@ interface Message {
   content: string;
   timestamp: Date;
   recommendedDishes?: MenuItem[];
+  optionPicks?: {
+    chipName: string;
+    userMessage: string;
+  }[];
 }
 
 export function ChatInterface() {
@@ -143,7 +148,8 @@ export function ChatInterface() {
         id: (Date.now() + 1).toString(),
         type: 'ai',
         content: data.message,
-        recommendedDishes: data.recommendedDishes
+        recommendedDishes: data.recommendedDishes,
+        optionPicks: data.optionPicks
       });
     } catch (error) {
       setIsTyping(false);
@@ -193,7 +199,53 @@ export function ChatInterface() {
         id: (Date.now() + 1).toString(),
         type: 'ai',
         content: data.message,
-        recommendedDishes: data.recommendedDishes
+        recommendedDishes: data.recommendedDishes,
+        optionPicks: data.optionPicks
+      });
+    } catch (error) {
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+      });
+    }
+  };
+
+  const handleOptionSelect = async (userMessage: string) => {
+    // Add user message
+    addMessage({
+      id: Date.now().toString(),
+      type: 'user',
+      content: userMessage
+    });
+
+    setInputValue('');
+    setIsTyping(true);
+
+    try {
+      const conversationHistory = buildConversationHistory();
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          conversationHistory
+        }),
+      });
+
+      const data = await response.json();
+      
+      setIsTyping(false);
+      addMessage({
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: data.message,
+        recommendedDishes: data.recommendedDishes,
+        optionPicks: data.optionPicks
       });
     } catch (error) {
       setIsTyping(false);
@@ -284,6 +336,14 @@ export function ChatInterface() {
                             />
                           ))}
                         </div>
+                      )}
+                      
+                      {/* Render option chips if AI provided options */}
+                      {message.type === 'ai' && message.optionPicks && message.optionPicks.length > 0 && (
+                        <OptionChips
+                          options={message.optionPicks}
+                          onSelect={handleOptionSelect}
+                        />
                       )}
                     </div>
                   ))}

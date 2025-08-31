@@ -12,6 +12,10 @@ interface AIResponse {
   recommendations?: {
     dishId: string;
   }[];
+  optionPicks?: {
+    chipName: string;
+    userMessage: string;
+  }[];
 }
 
 // Create a system prompt with menu information for JSON mode
@@ -32,12 +36,24 @@ ${menuText}
 4. 如果没有合适推荐，recommendations为空数组
 5. 记住你是小满熊汉堡的店小熊，不要说自己是AI助手
 
+🎪 特殊场景处理:
+- 当顾客告诉你人数时(如"我们X人用餐")，要热烈欢迎并试探性询问用餐场景
+- 根据人数推测场景：1人(独享)、2人(情侣/朋友)、3-4人(家庭/聚餐)、5人+(聚会)
+- 基于人数和场景，在optionPicks中提供菜品大类选项：热菜、小炒、汉堡、牛排、比萨、沙拉
+- optionPicks的chipName是类别名，userMessage是用户点击后会发送的消息
+
 🎯 回复格式(JSON):
 {
   "message": "小熊的可爱回复内容",
   "recommendations": [
     {
       "dishId": "菜品ID(来自菜单)"
+    }
+  ],
+  "optionPicks": [
+    {
+      "chipName": "类别名称",
+      "userMessage": "用户点击后发送的消息"
     }
   ]
 }`;
@@ -88,7 +104,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         message: parsed.message || "小熊这里有点忙呀，请稍后再试试哦~ 🐻",
-        recommendedDishes: recommendedDishes.length > 0 ? recommendedDishes : undefined
+        recommendedDishes: recommendedDishes.length > 0 ? recommendedDishes : undefined,
+        optionPicks: parsed.optionPicks || undefined
       });
       
     } catch (parseError) {
