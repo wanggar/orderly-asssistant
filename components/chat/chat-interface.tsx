@@ -147,13 +147,13 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: 'Sorry, I encountered an error. Please try again.'
+        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
       });
     }
   };
 
   const clearConversationHistory = () => {
-    if (confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
+    if (confirm('确定要清空和小熊的聊天记录吗？')) {
       localStorage.removeItem('chat-messages');
       setMessages([]);
     }
@@ -163,12 +163,17 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-screen bg-[#FFFBF5]">
-      {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <div className="bg-white border-b border-[#DDDDDD] px-4 py-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-[#333333]">AI Assistant</h1>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">🐻</div>
+              <div>
+                <h1 className="text-lg font-semibold text-[#333333]">小满熊汉堡</h1>
+                <p className="text-xs text-gray-500">可爱小熊为您服务</p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               {cart.length > 0 && (
                 <Button
@@ -194,7 +199,7 @@ export function ChatInterface() {
                   className="text-gray-600 hover:text-gray-800"
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
-                  Clear History
+                  清空记录
                 </Button>
               )}
             </div>
@@ -207,8 +212,10 @@ export function ChatInterface() {
             <div className="max-w-2xl mx-auto space-y-4">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-8">
-                  <h2 className="text-xl font-semibold mb-2">Welcome to AI Assistant</h2>
-                  <p>Start a conversation by typing a message below.</p>
+                  <div className="text-6xl mb-4">🐻</div>
+                  <h2 className="text-xl font-semibold mb-2">欢迎来到小满熊汉堡！</h2>
+                  <p className="text-gray-400">我是店里的小熊，很高兴为您推荐美味的中式料理~</p>
+                  <p className="text-sm text-gray-400 mt-2">快来和我聊聊，告诉我您想吃什么吧！🍜</p>
                 </div>
               ) : (
                 <>
@@ -243,13 +250,13 @@ export function ChatInterface() {
             </div>
           </ScrollArea>
 
-          {/* Input Area - Fixed at bottom */}
+          {/* Input Area */}
           <div className="bg-white border-t border-[#DDDDDD] p-4 flex-shrink-0">
             <div className="max-w-2xl mx-auto flex gap-2">
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type your message..."
+                placeholder="和小熊说说您想吃什么..."
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1"
                 disabled={isTyping}
@@ -276,7 +283,6 @@ export function ChatInterface() {
         onRemoveItem={(itemId) => updateCartQuantity(itemId, 0)}
         onClearCart={() => setCart([])}
         onCheckout={() => {
-          // Implement checkout logic here
           console.log('Checkout with items:', cart);
         }}
       />
