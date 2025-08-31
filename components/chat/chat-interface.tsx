@@ -124,8 +124,7 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: message,
-          conversationHistory,
-          cartItems: cart  // 添加购物车数据
+          conversationHistory
         }),
       });
 
@@ -209,8 +208,7 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory,
-          cartItems: cart  // 添加购物车数据
+          conversationHistory
         }),
       });
 
@@ -262,8 +260,7 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: message,
-          conversationHistory: [],
-          cartItems: cart  // 添加购物车数据
+          conversationHistory: []
         }),
       });
 
@@ -308,8 +305,7 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory,
-          cartItems: cart  // 添加购物车数据
+          conversationHistory
         }),
       });
 

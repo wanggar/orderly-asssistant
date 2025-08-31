@@ -18,69 +18,16 @@ interface AIResponse {
   }[];
 }
 
-// 购物车相关接口
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  category: string;
-}
-
-interface CartAnalysis {
-  totalPrice: number;
-  itemCount: number;
-  categories: string[];
-  priceLevel: 'low' | 'medium' | 'high';
-  hasMainDish: boolean;
-  hasDrink: boolean;
-  hasDessert: boolean;
-  avgPricePerItem: number;
-}
-
-// 购物车分析函数
-const analyzeCart = (cartItems: CartItem[]): CartAnalysis => {
-  const totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const categories = [...new Set(cartItems.map(item => item.category))];
-  
-  return {
-    totalPrice,
-    itemCount,
-    categories,
-    priceLevel: totalPrice < 20 ? 'low' : totalPrice < 40 ? 'medium' : 'high',
-    hasMainDish: categories.some(cat => ['热菜', '汉堡', '牛排', '披萨', '小炒', '主食'].includes(cat)),
-    hasDrink: categories.includes('饮品'),
-    hasDessert: categories.includes('甜品'),
-    avgPricePerItem: itemCount > 0 ? totalPrice / itemCount : 0
-  };
-};
-
 // Create a system prompt with menu information for JSON mode
-const createMenuSystemPrompt = (cartAnalysis?: CartAnalysis) => {
+const createMenuSystemPrompt = () => {
   const menuText = menuData.map(dish => 
     `${dish.id}: ${dish.name} (${dish.category}) - ¥${dish.price} - ${dish.description} - 辣度: ${dish.spicyLevel}/2 - 配料: ${dish.ingredients.join('、')}`
   ).join('\n');
 
-  // 构建购物车上下文信息
-  let cartContext = '';
-  if (cartAnalysis && cartAnalysis.totalPrice > 0) {
-    cartContext = `
-
-🛒 购物车上下文分析:
-- 当前总价: ¥${cartAnalysis.totalPrice} (${cartAnalysis.priceLevel}价位)
-- 商品数量: ${cartAnalysis.itemCount}件
-- 已有品类: ${cartAnalysis.categories.join('、')}
-- 已有主食: ${cartAnalysis.hasMainDish ? '是' : '否'}
-- 已有饮品: ${cartAnalysis.hasDrink ? '是' : '否'}
-- 已有甜品: ${cartAnalysis.hasDessert ? '是' : '否'}
-- 平均单价: ¥${cartAnalysis.avgPricePerItem.toFixed(1)}`;
-  }
-
   return `你是小满熊汉堡的可爱店小熊🐻，负责为顾客推荐美味的料理！你很活泼、友善，喜欢用可爱的语气和顾客交流。
 
 🍜 小满熊汉堡菜单:
-${menuText}${cartContext}
+${menuText}
 
 🐻 小熊服务指南:
 1. 用温暖可爱的语气与顾客交流，可以适当使用emoji和"呀"、"哦"等语气词
@@ -95,30 +42,12 @@ ${menuText}${cartContext}
 - 基于人数和场景，在optionPicks中提供菜品大类选项：热菜、小炒、汉堡、牛排、比萨、沙拉
 - optionPicks的chipName是类别名，userMessage是用户点击后会发送的消息
 
-🛒 购物车推荐策略:
-
-- 当顾客添加商品到购物车时:
-  1. 分析已选菜品的类型和口味
-  2. 推荐2-3道搭配合适的菜品
-  3. 考虑主食、配菜、饮品的均衡搭配
-
-- 根据购物车总价推荐:
-  1. 总价<20元: 推荐小食和饮品
-  2. 总价20-40元: 推荐经典菜品
-  3. 总价>40元: 推荐高端菜品
-
-- 根据用餐人数推荐:
-  1. 1人: 精致单人套餐
-  2. 2人: 情侣/朋友分享餐
-  3. 3-4人: 家庭套餐
-  4. 5人以上: 大份分享餐
-
-- 推荐话术示例:
-  - "这道菜和XX很配哦~"
-  - "要不要试试我们的人气套餐?"
-  - "再来份小食会更完整呢"
-
-⚠️ 重要: 保持正常对话流程，upsell策略只在购物车相关对话中自然融入，不要生硬推销.
+🛒 购物车智能搭配:
+- 当顾客说"我刚刚把XXX加入了购物车"时，要表示赞同并基于已选菜品进行智能搭配推荐
+- 分析已选菜品的特点：主食/配菜/饮品、口味、分量、营养搭配等
+- 推荐互补性菜品：如选了主食推荐配菜，选了肉类推荐蔬菜，选了重口味推荐清爽饮品
+- 考虑用餐人数、场景和整体搭配的均衡性
+- 在recommendations中推荐3-5道搭配菜品
 
 🎯 回复格式(JSON):
 {
@@ -140,20 +69,17 @@ ${menuText}${cartContext}
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, conversationHistory = [], cartItems = [] } = body;
+    const { message, conversationHistory = [] } = body;
 
     if (!message) {
       return NextResponse.json({ message: "Please provide a message" }, { status: 400 });
     }
 
-    // 分析购物车 (保持原有逻辑不变，只是添加分析)
-    const cartAnalysis = cartItems.length > 0 ? analyzeCart(cartItems) : undefined;
-
     // Build messages array with menu-aware system prompt
     const messages = [
       {
         role: "system" as const,
-        content: createMenuSystemPrompt(cartAnalysis)
+        content: createMenuSystemPrompt()
       },
       // Add conversation history
       ...conversationHistory,
