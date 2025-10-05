@@ -1,8 +1,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-
-
+import { useLanguage } from "@/lib/language-context";
 
 interface WelcomeScreenProps {
   onStartChat: () => void;
@@ -10,14 +9,14 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onSelectPeopleCount }: WelcomeScreenProps) {
-
+  const { t } = useLanguage();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       <div className="text-center mb-8">
         <div className="text-6xl mb-4">🍽️</div>
-        <h1 className="text-3xl font-bold text-[#333333] mb-2">🐻 小满熊点菜助手</h1>
-        <p className="text-gray-600 text-lg">让点菜变得简单有趣</p>
+        <h1 className="text-3xl font-bold text-[#333333] mb-2">{t('welcome.title')}</h1>
+        <p className="text-gray-600 text-lg">{t('welcome.subtitle')}</p>
       </div>
       
       {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-2xl">
@@ -35,7 +34,7 @@ export function WelcomeScreen({ onSelectPeopleCount }: WelcomeScreenProps) {
       </div> */}
       
       <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold text-[#333333] mb-6">请问有几位用餐呢？</h2>
+        <h2 className="text-xl font-semibold text-[#333333] mb-6">{t('welcome.peopleCount')}</h2>
         
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           {[1, 2, 3, 4].map((count) => (
@@ -45,7 +44,8 @@ export function WelcomeScreen({ onSelectPeopleCount }: WelcomeScreenProps) {
               variant="outline"
               className="w-16 h-16 rounded-full border-2 border-[#FF6B2D] text-[#FF6B2D] hover:bg-[#FF6B2D] hover:text-white font-medium text-lg transition-all duration-200"
             >
-              {count}人
+              {count}
+              {t('welcome.people')}
             </Button>
           ))}
           <Button
@@ -53,13 +53,13 @@ export function WelcomeScreen({ onSelectPeopleCount }: WelcomeScreenProps) {
             variant="outline"
             className="px-4 h-16 rounded-full border-2 border-[#FF6B2D] text-[#FF6B2D] hover:bg-[#FF6B2D] hover:text-white font-medium text-lg transition-all duration-200"
           >
-            5人+
+            5{t('welcome.peoplePlus')}
           </Button>
         </div>
       </div>
       
       <p className="text-sm text-gray-500">
-        选择人数后，小熊会为您推荐最合适的菜品组合～
+        {t('welcome.hint')}
       </p>
     </div>
   );

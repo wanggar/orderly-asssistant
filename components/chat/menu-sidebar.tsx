@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronRight, Plus, Minus, Menu, X, ArrowLeft, Star, ShoppingCart } from 'lucide-react';
 import { MenuItem } from '@/types';
-import menuData from '@/data/menu.json';
+import { useLanguage } from '@/lib/language-context';
+import { getMenuByLanguage } from '@/lib/menu-loader';
 
 interface MenuSidebarProps {
   onAddToCart: (dish: MenuItem) => void;
@@ -25,14 +26,18 @@ const spicyLevelColors = {
   2: 'bg-red-50 text-red-700 border-red-200'
 };
 
-const spicyLevelText = {
-  0: '不辣',
-  1: '微辣',
-  2: '中辣'
-};
-
 export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, isOpen, onToggle, navigationDish }: MenuSidebarProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['热菜', '主食']));
+  const { t, language } = useLanguage();
+  const menuData = getMenuByLanguage(language);
+  
+  const spicyLevelText = {
+    0: t('spicy.0'),
+    1: t('spicy.1'),
+    2: t('spicy.2')
+  };
+  
+  const defaultCategories = language === 'zh' ? ['热菜', '主食'] : ['Hot Dishes', 'Staples'];
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(defaultCategories));
   const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
   const [isDetailView, setIsDetailView] = useState(false);
 
@@ -73,7 +78,9 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
   }, {} as Record<string, MenuItem[]>);
 
   // Define category order for better display
-  const categoryOrder = ['热菜', '小炒', '主食', '汉堡', '牛排', '沙拉', '披萨', '意面', '小食', '蒸菜', '配菜', '汤品', '饮品', '甜品', '加价升级'];
+  const categoryOrder = language === 'zh'
+    ? ['热菜', '小炒', '主食', '汉堡', '牛排', '沙拉', '披萨', '意面', '小食', '蒸菜', '配菜', '汤品', '饮品', '甜品', '加价升级']
+    : ['Hot Dishes', 'Stir-Fry', 'Staples', 'Burgers', 'Steaks', 'Salads', 'Pizza', 'Pasta', 'Snacks', 'Steamed Dishes', 'Side Dishes', 'Soups', 'Beverages', 'Desserts', 'Upgrades'];
   
   const sortedCategories = categoryOrder.filter(cat => categorizedMenu[cat]);
 
@@ -98,7 +105,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
           size="sm"
         >
           <Menu className="w-4 h-4 mr-2" />
-          🍽️ 菜单
+          {t('menu.title')}
         </Button>
       </div>
     );
@@ -108,19 +115,19 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
   const renderDetailView = () => {
     if (!selectedDish) return null;
 
-    const spicyLevelText = selectedDish.spicyLevel 
-      ? selectedDish.spicyLevel === 1 ? "微辣 🌶️" 
-      : selectedDish.spicyLevel === 2 ? "中辣 🌶️🌶️" 
-      : "重辣 🌶️🌶️🌶️"
-      : "不辣";
+    const dishSpicyText = selectedDish.spicyLevel 
+      ? selectedDish.spicyLevel === 1 ? t('spicy.1') + " 🌶️" 
+      : selectedDish.spicyLevel === 2 ? t('spicy.2') + " 🌶️🌶️" 
+      : t('spicy.2') + " 🌶️🌶️🌶️"
+      : t('spicy.0');
 
     const commonQuestions = [
-      "这道菜辣不辣？",
-      "适合女生吃吗？", 
-      "这个菜油腻吗？",
-      "有什么特色？",
-      "配什么饮料好？",
-      "适合几个人吃？"
+      t('question.isSpicy'),
+      t('question.forWomen'), 
+      t('question.isOily'),
+      t('question.specialty'),
+      t('question.pairing'),
+      t('question.servings')
     ];
 
     const nutritionInfo = [
@@ -146,7 +153,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
           </Button>
           <div>
             <h2 className="font-bold text-[#FF6B2D] text-lg">{selectedDish.name}</h2>
-            <p className="text-xs text-[#8B4513] opacity-80">菜品详情</p>
+            <p className="text-xs text-[#8B4513] opacity-80">{t('details.title')}</p>
           </div>
         </div>
 
@@ -180,20 +187,20 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
               <div className="flex gap-1">
                 <Badge variant="secondary" className="text-xs">{selectedDish.category}</Badge>
                 <Badge variant="secondary" className="text-xs bg-red-50 text-red-600">
-                  {spicyLevelText}
+                  {dishSpicyText}
                 </Badge>
               </div>
             </div>
             
             {/* Description */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333] text-sm">菜品描述</h3>
+              <h3 className="font-medium mb-2 text-[#333333] text-sm">{t('details.title')}</h3>
               <p className="text-xs text-gray-600 leading-relaxed">{selectedDish.description}</p>
             </div>
             
             {/* Ingredients */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333] text-sm">主要食材</h3>
+              <h3 className="font-medium mb-2 text-[#333333] text-sm">{t('details.ingredients')}</h3>
               <div className="flex flex-wrap gap-1">
                 {selectedDish.ingredients.map((ingredient, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
@@ -204,24 +211,36 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
             </div>
 
             {/* Nutrition Info */}
-            <div>
-              <h3 className="font-medium mb-2 text-[#333333] text-sm">营养信息</h3>
-              <div className="bg-white rounded-lg p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {nutritionInfo.map((item, index) => (
-                    <div key={index} className="flex justify-between">
-                      <span className="text-xs text-gray-600">{item.label}:</span>
-                      <span className="text-xs font-medium">{item.value}</span>
+            {selectedDish.nutrition && (
+              <div>
+                <h3 className="font-medium mb-2 text-[#333333] text-sm">{t('details.nutrition')}</h3>
+                <div className="bg-white rounded-lg p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">{t('details.calories')}:</span>
+                      <span className="text-xs font-medium">{selectedDish.nutrition!.calories} kcal</span>
                     </div>
-                  ))}
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">{t('details.protein')}:</span>
+                      <span className="text-xs font-medium">{selectedDish.nutrition!.protein}g</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">{t('details.carbs')}:</span>
+                      <span className="text-xs font-medium">{selectedDish.nutrition!.carbs}g</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-600">{t('details.fat')}:</span>
+                      <span className="text-xs font-medium">{selectedDish.nutrition!.fat}g</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Reviews */}
             {selectedDish.reviews && selectedDish.reviews.length > 0 && (
               <div>
-                <h3 className="font-medium mb-2 text-[#333333] text-sm">用户评价</h3>
+                <h3 className="font-medium mb-2 text-[#333333] text-sm">{t('details.reviews')}</h3>
                 <div className="space-y-2">
                   {selectedDish.reviews.map((review) => (
                     <div key={review.id} className="bg-white p-3 rounded-lg">
@@ -245,7 +264,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
             
             {/* Quick Questions */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333] text-sm">快速提问</h3>
+              <h3 className="font-medium mb-2 text-[#333333] text-sm">{t('menu.quickQuestions')}</h3>
               <div className="grid grid-cols-1 gap-1">
                 {commonQuestions.map((question, index) => (
                   <Button
@@ -271,7 +290,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
               className="w-full bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 font-medium text-sm"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              加入购物车 - {formatPrice(selectedDish.price)}
+              {t('details.addToCart')} - {formatPrice(selectedDish.price)}
             </Button>
           ) : (
             <div className="flex items-center gap-3">
@@ -286,7 +305,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
                 </Button>
                 <div className="flex-1 text-center">
                   <div className="text-sm font-bold text-[#FF6B2D]">{quantity}</div>
-                  <div className="text-xs text-gray-500">已选择</div>
+                  <div className="text-xs text-gray-500">{t('menu.selected')}</div>
                 </div>
                 <Button
                   onClick={() => onUpdateQuantity(selectedDish.id, quantity + 1)}
@@ -297,7 +316,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
                 </Button>
               </div>
               <div className="text-right">
-                <div className="text-xs text-gray-500">小计</div>
+                <div className="text-xs text-gray-500">{t('menu.subtotal')}</div>
                 <div className="text-sm font-bold text-[#FF6B2D]">{formatPrice(selectedDish.price * quantity)}</div>
               </div>
             </div>
@@ -318,8 +337,8 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
               <div className="flex items-center gap-3">
                 <div className="text-2xl">🍽️</div>
                 <div>
-                  <h2 className="font-bold text-[#FF6B2D] text-lg">美味菜单</h2>
-                  <p className="text-xs text-[#8B4513] opacity-80">精选美食等你来</p>
+                  <h2 className="font-bold text-[#FF6B2D] text-lg">{t('menu.header')}</h2>
+                  <p className="text-xs text-[#8B4513] opacity-80">{t('menu.subtitle')}</p>
                 </div>
               </div>
           <Button
@@ -353,7 +372,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
                         variant="secondary" 
                         className="text-xs bg-[#FF6B2D]/15 text-[#FF6B2D] border-[#FF6B2D]/20"
                       >
-                        {dishes.length}道
+                        {dishes.length} {t('menu.dishCount')}
                       </Badge>
                     </div>
                     {isExpanded ? 
@@ -451,7 +470,7 @@ export function MenuSidebar({ onAddToCart, onUpdateQuantity, getCartQuantity, is
                                         className="bg-gradient-to-r from-[#FF6B2D] to-[#FF8533] hover:from-[#FF6B2D]/90 hover:to-[#FF8533]/90 text-white h-6 px-3 text-xs font-bold shadow-lg hover:shadow-xl transition-all duration-200"
                                       >
                                         <Plus className="w-3 h-3 mr-1" />
-                                        加入
+                                        {t('menu.add')}
                                       </Button>
                                     )}
                                   </div>

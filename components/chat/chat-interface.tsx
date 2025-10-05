@@ -11,6 +11,8 @@ import { MenuSidebar } from './menu-sidebar';
 import { WelcomeScreen } from './welcome-screen';
 import { OptionChips } from './option-chips';
 import { CartDialog } from '@/components/cart/cart-dialog';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useLanguage } from '@/lib/language-context';
 
 import { Send, RotateCcw, ShoppingCart } from 'lucide-react';
 import { MenuItem, CartItem } from '@/types';
@@ -28,6 +30,7 @@ interface Message {
 }
 
 export function ChatInterface() {
+  const { t, language } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -96,9 +99,13 @@ export function ChatInterface() {
     }
     lastCartMessageTime.current = now;
 
-    const message = action === 'added' 
-      ? `把${dish.name}加入购物车。`
-      : `把${dish.name}的数量增加到${newQuantity}份。`;
+    const message = language === 'zh'
+      ? (action === 'added' 
+        ? `把${dish.name}加入购物车。`
+        : `把${dish.name}的数量增加到${newQuantity}份。`)
+      : (action === 'added'
+        ? `I added ${dish.name} to cart.`
+        : `I increased ${dish.name} quantity to ${newQuantity}.`);
     
     // Create user message
     const userMessage = {
@@ -127,7 +134,8 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: message,
-          conversationHistory
+          conversationHistory,
+          language
         }),
       });
 
@@ -146,7 +154,7 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+        content: t('ai.busy')
       });
     }
   };
@@ -226,7 +234,8 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory
+          conversationHistory,
+          language
         }),
       });
 
@@ -245,13 +254,13 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+        content: t('ai.busy')
       });
     }
   };
 
   const clearConversationHistory = () => {
-    if (confirm('确定要清空和小熊的聊天记录吗？购物车内容也会一并清空哦~')) {
+    if (confirm(t('cart.confirmClear'))) {
       localStorage.removeItem('chat-messages');
       setMessages([]);
       setCart([]); // 同时清空购物车
@@ -259,7 +268,9 @@ export function ChatInterface() {
   };
 
   const handlePeopleCountSelect = async (count: number) => {
-    const message = count >= 5 ? `${count}人以上用餐。` : `${count}人用餐。`;
+    const message = language === 'zh'
+      ? (count >= 5 ? `${count}人以上用餐。` : `${count}人用餐。`)
+      : (count >= 5 ? `${count}+ people dining.` : `${count} people dining.`);
     
     // Add user message
     addMessage({
@@ -278,7 +289,8 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: message,
-          conversationHistory: []
+          conversationHistory: [],
+          language
         }),
       });
 
@@ -297,7 +309,7 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+        content: t('ai.busy')
       });
     }
   };
@@ -323,7 +335,8 @@ export function ChatInterface() {
         },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory
+          conversationHistory,
+          language
         }),
       });
 
@@ -342,7 +355,7 @@ export function ChatInterface() {
       addMessage({
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '小熊暂时有点忙，请稍后再试试哦~ 🐻'
+        content: t('ai.busy')
       });
     }
   };
@@ -359,11 +372,12 @@ export function ChatInterface() {
             <div className="flex items-center gap-2">
               <div className="text-2xl">🐻</div>
               <div>
-                <h1 className="text-lg font-semibold text-[#333333]">小满熊汉堡</h1>
-                <p className="text-xs text-gray-500">可爱小熊为您服务</p>
+                <h1 className="text-lg font-semibold text-[#333333]">{t('header.title')}</h1>
+                <p className="text-xs text-gray-500">{t('header.subtitle')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               {cart.length > 0 && (
                 <Button
                   variant="outline"
@@ -372,7 +386,7 @@ export function ChatInterface() {
                   className="relative"
                 >
                   <ShoppingCart className="w-4 h-4 mr-1" />
-                  购物车
+                  {t('header.cart')}
                   {totalCartItems > 0 && (
                     <span className="absolute -top-2 -right-2 bg-[#FF6B2D] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                       {totalCartItems}
@@ -388,7 +402,7 @@ export function ChatInterface() {
                   className="text-gray-600 hover:text-gray-800"
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
-                  清空记录
+                  {t('header.clearHistory')}
                 </Button>
               )}
             </div>
@@ -449,7 +463,7 @@ export function ChatInterface() {
               <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="和小熊说说您想吃什么..."
+                placeholder={t('chat.inputPlaceholder')}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1"
                 disabled={isTyping}

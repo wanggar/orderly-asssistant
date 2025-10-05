@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CartItem } from "@/types";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { useLanguage } from "@/lib/language-context";
 
 interface CartDialogProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function CartDialog({
   onClearCart, 
   onCheckout 
 }: CartDialogProps) {
+  const { t } = useLanguage();
   const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -35,9 +37,9 @@ export function CartDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <ShoppingCart className="w-5 h-5 text-[#FF6B2D]" />
-            购物车
+            {t('cart.title')}
             <Badge className="bg-[#FF6B2D] text-white text-xs">
-              {totalItems}件
+              {totalItems}{t('cart.items')}
             </Badge>
           </DialogTitle>
         </DialogHeader>
@@ -45,8 +47,8 @@ export function CartDialog({
         {items.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">购物车是空的</p>
-            <p className="text-sm text-gray-400 mt-1">快去选择你喜欢的菜品吧！</p>
+            <p className="text-gray-500">{t('cart.empty')}</p>
+            <p className="text-sm text-gray-400 mt-1">{t('cart.emptyHint')}</p>
           </div>
         ) : (
           <>
@@ -114,10 +116,10 @@ export function CartDialog({
             <div className="border-t pt-4">
               {/* 总价 */}
               <div className="flex justify-between items-center mb-4">
-                <span className="text-gray-600">总计：</span>
+                <span className="text-gray-600">{t('cart.total')}</span>
                 <div className="text-right">
                   <div className="text-lg font-bold text-[#FF6B2D]">¥{totalPrice.toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">{totalItems}件商品</div>
+                  <div className="text-xs text-gray-500">{totalItems}{t('cart.itemCount')}</div>
                 </div>
               </div>
 
@@ -128,7 +130,7 @@ export function CartDialog({
                   onClick={onClearCart}
                   className="flex-1 text-gray-600 border-gray-300 hover:bg-gray-50"
                 >
-                  清空购物车
+                  {t('cart.clear')}
                 </Button>
                 <Button
                   onClick={() => {
@@ -137,7 +139,7 @@ export function CartDialog({
                   }}
                   className="flex-1 bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 text-white"
                 >
-                  去结算 (¥{totalPrice.toFixed(2)})
+                  {t('cart.checkout')} (¥{totalPrice.toFixed(2)})
                 </Button>
               </div>
             </div>

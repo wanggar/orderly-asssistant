@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MenuItem } from "@/types";
 import { ShoppingCart, Star, X, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from '@/lib/language-context';
 
 interface DishDetailsPanelProps {
   dish: MenuItem | null;
@@ -28,20 +29,21 @@ export function DishDetailsPanel({
   onViewDetails,
   quantity
 }: DishDetailsPanelProps) {
+  const { t } = useLanguage();
 
   const spicyLevelText = dish?.spicyLevel 
-    ? dish.spicyLevel === 1 ? "微辣 🌶️" 
-    : dish.spicyLevel === 2 ? "中辣 🌶️🌶️" 
-    : "重辣 🌶️🌶️🌶️"
-    : "不辣";
+    ? dish.spicyLevel === 1 ? t('spicy.1') + " 🌶️" 
+    : dish.spicyLevel === 2 ? t('spicy.2') + " 🌶️🌶️" 
+    : t('spicy.2') + " 🌶️🌶️🌶️"
+    : t('spicy.0');
 
   const commonQuestions = [
-    "这道菜辣不辣？",
-    "适合女生吃吗？", 
-    "这个菜油腻吗？",
-    "有什么特色？",
-    "配什么饮料好？",
-    "适合几个人吃？"
+    t('question.isSpicy'),
+    t('question.forWomen'), 
+    t('question.isOily'),
+    t('question.specialty'),
+    t('question.pairing'),
+    t('question.servings')
   ];
 
   // 营养信息示例
@@ -61,7 +63,7 @@ export function DishDetailsPanel({
       {isOpen && (
         <div className="flex items-center justify-between p-4 border-b border-[#DDDDDD] bg-[#FFFBF5] relative z-10">
           <h2 className="text-lg font-semibold text-[#333333]">
-            {dish ? dish.name : "菜品详情"}
+            {dish ? dish.name : t('details.title')}
           </h2>
           <Button
             variant="ghost"
@@ -112,13 +114,13 @@ export function DishDetailsPanel({
             
             {/* Description */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333]">菜品描述</h3>
+              <h3 className="font-medium mb-2 text-[#333333]">{t('details.description')}</h3>
               <p className="text-sm text-gray-600 leading-relaxed">{dish.description}</p>
             </div>
             
             {/* Ingredients */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333]">主要食材</h3>
+              <h3 className="font-medium mb-2 text-[#333333]">{t('details.ingredients')}</h3>
               <div className="flex flex-wrap gap-1">
                 {dish.ingredients.map((ingredient, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
@@ -130,7 +132,7 @@ export function DishDetailsPanel({
 
             {/* Nutrition Info */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333]">营养信息</h3>
+              <h3 className="font-medium mb-2 text-[#333333]">{t('details.nutrition')}</h3>
               <div className="bg-white rounded-lg p-3">
                 <div className="grid grid-cols-2 gap-2">
                   {nutritionInfo.map((item, index) => (
@@ -148,7 +150,7 @@ export function DishDetailsPanel({
             {/* Mock Reviews */}
             {dish.reviews && dish.reviews.length > 0 && (
               <div>
-                <h3 className="font-medium mb-2 text-[#333333]">用户评价</h3>
+                <h3 className="font-medium mb-2 text-[#333333]">{t('details.reviews')}</h3>
                 <div className="space-y-2">
                   {dish.reviews.map((review) => (
                     <div key={review.id} className="bg-white p-3 rounded-lg">
@@ -172,7 +174,7 @@ export function DishDetailsPanel({
 
             {/* Recommended Pairings */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333]">推荐菜品搭配</h3>
+              <h3 className="font-medium mb-2 text-[#333333]">{t('details.recommendedPairings')}</h3>
               <div className="space-y-2">
                 <div 
                   className="bg-white p-3 rounded-lg flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -237,7 +239,7 @@ export function DishDetailsPanel({
             
             {/* Quick Questions */}
             <div>
-              <h3 className="font-medium mb-2 text-[#333333]">快速提问</h3>
+              <h3 className="font-medium mb-2 text-[#333333]">{t('details.quickQuestions')}</h3>
               <div className="grid grid-cols-1 gap-2">
                 {commonQuestions.map((question, index) => (
                   <Button
@@ -265,7 +267,7 @@ export function DishDetailsPanel({
               className="w-full bg-[#FF6B2D] hover:bg-[#FF6B2D]/90 font-medium"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              加入购物车 - ¥{dish.price}
+              {t('details.addToCart')} - ¥{dish.price}
             </Button>
           ) : (
             <div className="flex items-center gap-4">
@@ -280,7 +282,7 @@ export function DishDetailsPanel({
                 </Button>
                 <div className="flex-1 text-center">
                   <div className="text-lg font-bold text-[#FF6B2D]">{quantity}</div>
-                  <div className="text-xs text-gray-500">已选择</div>
+                  <div className="text-xs text-gray-500">{t('details.selected')}</div>
                 </div>
                 <Button
                   onClick={() => onUpdateQuantity(dish.id, quantity + 1)}
@@ -292,7 +294,7 @@ export function DishDetailsPanel({
               
               {/* 总价显示 */}
               <div className="text-right">
-                <div className="text-xs text-gray-500">小计</div>
+                <div className="text-xs text-gray-500">{t('details.subtotal')}</div>
                 <div className="text-lg font-bold text-[#FF6B2D]">¥{(dish.price * quantity).toFixed(2)}</div>
               </div>
             </div>

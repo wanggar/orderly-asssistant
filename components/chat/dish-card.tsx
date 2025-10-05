@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MenuItem } from "@/types";
 import { ShoppingCart, Info, Plus, Minus } from "lucide-react";
+import { useLanguage } from '@/lib/language-context';
 
 interface DishCardProps {
   dish: MenuItem;
@@ -15,10 +16,12 @@ interface DishCardProps {
 }
 
 export function DishCard({ dish, quantity, onAddToCart, onUpdateQuantity, onViewDetails }: DishCardProps) {
+  const { t } = useLanguage();
+  
   const spicyLevelText = dish.spicyLevel 
-    ? dish.spicyLevel === 1 ? "微辣" 
-    : dish.spicyLevel === 2 ? "中辣" 
-    : "重辣"
+    ? dish.spicyLevel === 1 ? t('spicy.1')
+    : dish.spicyLevel === 2 ? t('spicy.2')
+    : t('spicy.2')
     : "";
 
   const handleAddToCart = () => {
@@ -78,7 +81,7 @@ export function DishCard({ dish, quantity, onAddToCart, onUpdateQuantity, onView
               className="h-7 px-2 text-xs flex-1"
             >
               <Info className="w-3 h-3 mr-1" />
-              详情
+              {t('menu.details')}
             </Button>
             
             {/* 数量选择器 */}
@@ -89,7 +92,7 @@ export function DishCard({ dish, quantity, onAddToCart, onUpdateQuantity, onView
                 className="h-7 px-2 text-xs flex-1 bg-[#FF6B2D] hover:bg-[#FF6B2D]/90"
               >
                 <ShoppingCart className="w-3 h-3 mr-1" />
-                加入
+                {t('menu.add')}
               </Button>
             ) : (
               <div className="flex items-center gap-1 flex-1">
